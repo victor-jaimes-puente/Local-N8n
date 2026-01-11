@@ -5,8 +5,6 @@ volumes:
   db_storage:
   n8n_storage:
   redis_storage:
-  caddy_data:
-  caddy_config:
 
 x-shared: &shared
   image: docker.n8n.io/n8nio/n8n
@@ -25,6 +23,8 @@ x-shared: &shared
     - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
     - N8N_PORT=5678
     - N8N_PROTOCOL=https
+    - N8N_PROXY_HOPS=1
+    - N8N_EDITOR_BASE_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
     - NODE_ENV=production
     - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
     - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
@@ -38,18 +38,6 @@ x-shared: &shared
       condition: service_healthy
 
 services:
-  # Reverse Proxy
-  caddy:
-    image: caddy:latest
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - caddy_data:/data
-      - caddy_config:/config
-      - ${DATA_FOLDER}/caddy_config/Caddyfile:/etc/caddy/Caddyfile
-
   # Database
   postgres:
     image: postgres:16
@@ -85,7 +73,7 @@ services:
   n8n:
     <<: *shared
     ports:
-      - "5678:5678"
+      - "127.0.0.1:5678:5678"
 
   # n8n Worker for Queue Execution
   n8n-worker:
