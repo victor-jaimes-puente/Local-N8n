@@ -5,8 +5,6 @@ volumes:
   db_storage:
   n8n_storage:
   redis_storage:
-  caddy_data:
-  caddy_config:
 
 x-shared: &shared
   image: docker.n8n.io/n8nio/n8n
@@ -38,18 +36,6 @@ x-shared: &shared
       condition: service_healthy
 
 services:
-  # Reverse Proxy
-  caddy:
-    image: caddy:latest
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - caddy_data:/data
-      - caddy_config:/config
-      - ${DATA_FOLDER}/caddy_config/Caddyfile:/etc/caddy/Caddyfile
-
   # Database
   postgres:
     image: postgres:16
@@ -86,6 +72,9 @@ services:
     <<: *shared
     ports:
       - "5678:5678"
+    networks:
+      - default
+      - gateway_net
 
   # n8n Worker for Queue Execution
   n8n-worker:
@@ -93,3 +82,7 @@ services:
     command: worker
     depends_on:
       - n8n
+
+networks:
+  gateway_net:
+    external: true

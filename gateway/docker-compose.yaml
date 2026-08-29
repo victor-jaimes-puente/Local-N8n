@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    networks:
+      - gateway_net
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  gateway_net:
+    external: true

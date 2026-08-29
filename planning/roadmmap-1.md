@@ -1,4 +1,4 @@
-Here is a deeper, heavily researched architectural roadmap broken down into specific sub-phases. This approach isolates your services while setting up a scalable foundation for both your automation and development environments.
+
 Phase 1: Central Proxy & Network Backbone
 Establish a standalone reverse proxy to handle all Meshnet routing securely without port conflicts.
 ⚬ Sub-Phase 1.1: Shared Infrastructure Topology: Create a dedicated external Docker network (e.g., docker network create gateway_net). This allows both the n8n and Lingua deployment stacks to attach to the proxy independently without requiring a monolithic Compose file.
