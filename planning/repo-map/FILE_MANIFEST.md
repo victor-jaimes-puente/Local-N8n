@@ -19,11 +19,12 @@
 | [`DOCKER-WSL.md`](file:///Users/victor/Dev/Local-N8n/DOCKER-WSL.md) | Markdown | 95 | Detailed integration manual for Docker Desktop and WSL 2 on Windows 11. |
 | [`WSL.md`](file:///Users/victor/Dev/Local-N8n/WSL.md) | Markdown | 197 | Comprehensive Ubuntu WSL 2 installation, systemd enablement, networking, and performance tuning guide. |
 | [`planning/roadmmap-1.md`](file:///Users/victor/Dev/Local-N8n/planning/roadmmap-1.md) | Markdown | 22 | 4-Phase Infrastructure Roadmap (Central proxy, n8n queue stack, Lingua CI/CD over Meshnet, guardrails). |
+| [`planning/n8n-mcp-antigrvity-roadmap.md`](file:///Users/victor/Dev/Local-N8n/planning/n8n-mcp-antigrvity-roadmap.md) | Markdown | 114 | 5-Phase implementation roadmap connecting Antigravity IDE to Meshnet n8n via Model Context Protocol (MCP). |
 | `/etc/systemd/system/local-n8n.service` | Systemd | 24 | Host systemd unit managing boot persistence with Doppler runtime secret injection. |
 | [`planning/repo-map/README.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/README.md) | Markdown | 73 | Agent entry point, repository architecture summary, and quick reference index. |
 | [`planning/repo-map/ARCHITECTURE.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ARCHITECTURE.md) | Markdown | 169 | System topology, Mermaid diagrams, Zero-Trust adapter bindings, systemd boot sequence, and queue lifecycle. |
 | [`planning/repo-map/ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md) | Markdown | 78 | Environment variable dictionary, Doppler runtime injection guide, and directory token binding. |
-| [`planning/repo-map/FILE_MANIFEST.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/FILE_MANIFEST.md) | Markdown | 92 | Complete file index, line counts, and deep component analysis (This file). |
+| [`planning/repo-map/FILE_MANIFEST.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/FILE_MANIFEST.md) | Markdown | 98 | Complete file index, line counts, and deep component analysis (This file). |
 | [`planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) | Markdown | 187 | Step-by-step commands, Doppler launch runbook, systemd unit setup, client DNS setup, and roadmap status. |
 
 ---
@@ -86,3 +87,11 @@
 - `ExecStartPre`: Executes `/usr/bin/docker compose down` to clear stale un-injected containers.
 - `ExecStart`: Executes `/usr/bin/doppler run -- /usr/bin/docker compose up -d` using directory-scoped token binding.
 - `ExecStop`: Executes `/usr/bin/docker compose down` with 60-second shutdown timeout.
+
+### I. [`planning/n8n-mcp-antigrvity-roadmap.md`](file:///Users/victor/Dev/Local-N8n/planning/n8n-mcp-antigrvity-roadmap.md)
+- 5-Phase strategic plan for Model Context Protocol (MCP) integration with Antigravity IDE:
+  - **Phase 1**: Ingress verification over NordVPN Meshnet adapter (`100.116.224.88`).
+  - **Phase 2**: Doppler API key provisioning (`N8N_MCP_API_KEY`).
+  - **Phase 3**: Antigravity IDE MCP server configuration (`mcp_config.json`) using Doppler runtime wrapper.
+  - **Phase 4**: Agent rules and system guardrails for schema validation, queue awareness, and execution pruning.
+  - **Phase 5**: Full-cycle validation and workflow scaffolding verification.
