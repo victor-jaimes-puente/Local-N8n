@@ -5,8 +5,12 @@ services:
     image: caddy:latest
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "100.116.224.88:80:80"
+      - "100.116.224.88:443:443"
+      - "100.116.224.88:443:443/udp"
+      - "100.64.153.30:80:80"
+      - "100.64.153.30:443:443"
+      - "100.64.153.30:443:443/udp"
     volumes:
       - caddy_data:/data
       - caddy_config:/config
