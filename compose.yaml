@@ -5,6 +5,7 @@ volumes:
   db_storage:
   n8n_storage:
   redis_storage:
+  n8n_local_files:
 
 x-shared: &shared
   image: docker.n8n.io/n8nio/n8n
@@ -19,16 +20,24 @@ x-shared: &shared
     - EXECUTIONS_MODE=queue
     - QUEUE_BULL_REDIS_HOST=redis
     - QUEUE_HEALTH_CHECK_ACTIVE=true
-    - N8N_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
     - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
     - N8N_PORT=5678
     - N8N_PROTOCOL=https
     - NODE_ENV=production
     - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
     - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+    - EXECUTIONS_DATA_PRUNE=true
+    - EXECUTIONS_DATA_MAX_AGE=168
+    - EXECUTIONS_DATA_PRUNE_MAX_COUNT=50000
   volumes:
     - n8n_storage:/home/node/.n8n
-    - ${DATA_FOLDER}/local_files:/files
+    - n8n_local_files:/files
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
   depends_on:
     redis:
       condition: service_healthy
@@ -40,6 +49,11 @@ services:
   postgres:
     image: postgres:16
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -59,6 +73,11 @@ services:
   redis:
     image: redis:6-alpine
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       - redis_storage:/data
     healthcheck:
