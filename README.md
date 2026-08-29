@@ -1,94 +1,86 @@
-# Local n8n (Docker Compose)
+# Local n8n over NordVPN Meshnet (Docker Compose)
 
-Follow this documentation in order for a successful local setup:
+This repository contains the deployment configuration for running a private n8n stack and Lingua application on an Ubuntu server (Dell Precision 5480), securely accessible over a NordVPN Meshnet tunnel using a Zero-Trust architecture.
 
-1. Read `WSL.md` — Install and configure WSL (Ubuntu) on Windows 11.
-2. Read `DOCKER-WSL.md` — Install and configure Docker Desktop integration with WSL.
-3. Read this `README.md` — project-specific steps to run n8n with Docker Compose.
+---
 
-This README assumes you already have a working Ubuntu WSL distro and Docker Desktop configured for WSL (per the two files above).
+## Architecture & Networking Overview
 
-Quick checklist before starting
+The infrastructure was successfully deployed with the following core configurations:
 
-- WSL Ubuntu is installed and updated (`WSL.md`).
-- Docker Desktop is installed and WSL integration enabled for your Ubuntu distro (`DOCKER-WSL.md`).
-- You're operating from the Ubuntu WSL shell for the commands below.
+### 1. Secret Management & Container Initialization
+- **Doppler Runtime Injection:** Environment variables are no longer stored in a local `.env` file on disk. Instead, secrets are securely injected directly into memory at runtime using the `doppler run -- docker compose ...` wrapper.
+- **Database Initialization:** Corrupted PostgreSQL database volumes caused by early unauthenticated boot attempts were destroyed (`docker compose down -v`), allowing the database to initialize properly with the correct superuser passwords injected by Doppler.
 
-Project files
-- `compose.yaml` — Docker Compose config for `caddy`, `postgres`, `redis`, `n8n`, and `n8n-worker`.
-- `.env` — environment variables (ignored by git). Copy and edit before first run.
-- `init-data.sh` — Postgres init script (creates non-root DB user on first startup).
+### 2. Client DNS & Host File Overrides
+- **Custom Subdomains:** Local hosts files on client machines are configured to manually map the custom subdomains (`n8n.local-n8n.com` and `lingua.local-n8n.com`) directly to the server's static Meshnet IP (`100.116.224.88`).
+- **DNS Resolution Fixes:** Conflicting `127.0.0.1` loopback entries were cleared from the macOS hosts file, and the DNS cache (`mDNSResponder`) was flushed to force the browser to route traffic correctly through the VPN tunnel.
 
-Prepare `.env`
+### 3. Network Security & Firewall Adjustments
+- **NordVPN Firewall:** NordVPN's aggressive internal firewall was disabled (`nordvpn set firewall off`) and the daemon restarted. This prevented NordVPN's iptables from silently dropping return packets destined for Docker's internal subnet.
+- **UFW Native Firewall:** Ubuntu's native UFW was re-enabled as the primary on-machine defense. Port `22` was explicitly allowed beforehand to guarantee SSH access remained active.
+
+### 4. Zero-Trust Gateway Binding
+- **Meshnet Exclusivity:** The Caddy reverse proxy (`gateway/docker-compose.yaml`) abandoned the default `0.0.0.0` binding.
+- **Invisible on Local LAN:** Web ports are bound exclusively to the Meshnet adapters (e.g., `100.116.224.88:443:443`), making the server entirely invisible to other devices on the local home Wi-Fi and strictly enforcing Zero-Trust access.
+
+---
+
+## Deployment Guide
+
+### Prerequisites
+1. **Ubuntu Server:** Configured with Docker, Docker Compose, and UFW.
+2. **NordVPN Meshnet:** Installed and connected. You must know your server's static Meshnet IP.
+3. **Doppler CLI:** Installed and authenticated on the server for secret injection.
+
+### Step 1: Start the Gateway Proxy
+The Caddy reverse proxy handles all Meshnet routing securely without port conflicts. It runs on a dedicated Docker network (`gateway_net`).
 
 ```bash
-# from project root inside WSL
-cp .env .env.local
-# Edit .env.local and set DOMAIN_NAME, SUBDOMAIN, DATA_FOLDER and secrets
-```
-
-Start the stack (WSL Ubuntu shell)
-
-```bash
-# ensure you're inside the project directory
+# Ensure you're inside the project directory
 cd /path/to/Local-N8n
 
-# bring services up in background
+# Create the shared external network
+docker network create gateway_net
+
+# Start the standalone Caddy gateway
+cd gateway
 docker compose up -d
 ```
 
-Check status and logs
+### Step 2: Start the n8n Application Stack
+The n8n stack (n8n, worker, postgres, redis) relies on Doppler for its secrets.
 
 ```bash
-# list running containers
-docker compose ps
+# Return to the main project directory
+cd ..
 
-# follow logs for all services
-docker compose logs -f
+# Ensure your Doppler project is scoped correctly
+doppler setup --project local-n8n --config prd
 
-# follow logs for a single service (example: n8n)
-docker compose logs -f n8n
+# Boot the application stack with injected secrets
+doppler run -- docker compose up -d
 ```
 
-Recreate or update the stack
+### Step 3: Client Configuration
+To access the services from your client machine, you must manually point the domains to the server's Meshnet IP.
 
-```bash
-# stop and remove containers
-docker compose down
+1. Open your client's hosts file (e.g., `/etc/hosts` on macOS/Linux, or `C:\Windows\System32\drivers\etc\hosts` on Windows).
+2. Add the following entry, replacing `100.116.224.88` with your server's actual Meshnet IP if it changes:
+   ```text
+   100.116.224.88 n8n.local-n8n.com lingua.local-n8n.com
+   ```
+3. Flush your DNS cache (e.g., `sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder` on macOS).
+4. Navigate to `https://n8n.local-n8n.com` in your browser.
 
-# rebuild and start (useful after changing .env or compose file)
-docker compose up -d --build
-```
+---
 
-Postgres initialization
+## Troubleshooting
 
-- The `init-data.sh` script is mounted into the Postgres container and runs only on first initialization when the `db_storage` volume is empty. It creates the non-root user specified by `.env`.
-- To re-run initialization you must remove the Postgres volume (this destroys DB data):
-
-```bash
-docker volume rm Local-N8n_db_storage
-```
-
-Access n8n
-
-- Open a browser on your Windows host and navigate to `https://${SUBDOMAIN}.${DOMAIN_NAME}` (ensure your host resolves that domain — see `DOCKER-WSL.md` for hosts file advice).
-
-Troubleshooting pointers
-
-- If containers do not start: run `docker compose logs` and inspect errors for `postgres`, `redis`, or `caddy`.
-- If Postgres prints authentication errors, check your `.env.local` credentials match the compose environment variables.
-- If Caddy is failing to obtain TLS certs for a local-only domain, consider using a hosts file entry and/or a local/internal TLS setup during development.
-
-Useful commands summary
-
-```bash
-docker compose up -d         # start services
-docker compose ps            # show running services
-docker compose logs -f       # stream logs
-docker compose down          # stop and remove containers
-docker volume ls             # list volumes
-```
-
-If you want me to add a small `Makefile` or a one-file checklist that automates common commands, say the word and I will add it.
-
-License: MIT
+- **Database Authentication Errors:** If Postgres fails to authenticate, it may be due to leftover data from a previous misconfigured run. You must destroy the volume and recreate it:
+  ```bash
+  docker compose down -v
+  doppler run -- docker compose up -d
+  ```
+- **Connection Refused / Timeout:** Ensure that the Caddy gateway is running and that its ports are correctly bound to your Meshnet IP in `gateway/docker-compose.yaml`.
+- **Containers Cannot Reach Internet:** Ensure NordVPN's firewall is disabled (`nordvpn set firewall off`) so it does not interfere with Docker's internal networking.
