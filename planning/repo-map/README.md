@@ -2,19 +2,21 @@
 
 > **Target Audience**: Autonomous Coding & Operations AI Agents
 > **Repository Path**: `/Users/victor/Dev/Local-N8n`
-> **Primary Stack**: Docker Compose, n8n (Queue Mode), PostgreSQL 16, Redis 6, Caddy (Reverse Proxy), WSL 2 / Ubuntu.
+> **Primary Stack**: Docker Compose, n8n (Queue Mode), PostgreSQL 16, Redis 6, Caddy (Reverse Proxy), NordVPN Meshnet (Zero-Trust Ingress), Doppler Secret Injection, Ubuntu Server (Dell Precision 5480) / WSL 2.
 
 ---
 
 ## 1. Executive Summary & Purpose
 
-`Local-N8n` is a production-grade, containerized local automation stack running **n8n** in **Queue Mode** with PostgreSQL and Redis backends, behind a **Caddy** reverse proxy. It is designed to run inside WSL 2 (Ubuntu) on Windows 11, integrated with Docker Desktop, and prepared for multi-tenant Meshnet deployment alongside external services like **Lingua**.
+`Local-N8n` is a production-grade, containerized automation infrastructure running **n8n** in **Queue Mode** with dedicated PostgreSQL 16 and Redis 6 backends, fronted by a **Caddy** reverse proxy. The system is deployed under a **Zero-Trust architecture** on an Ubuntu server (Dell Precision 5480), exposed securely over private **NordVPN Meshnet** tunnels, and fully decoupled from plaintext disk secrets using **Doppler runtime injection**.
 
-Key Features:
-- **Scalable Queue Mode**: Separates UI/API (`n8n`) from background workflow execution (`n8n-worker`) using Redis Bull Queue.
-- **Dedicated Central Gateway**: External Docker network (`gateway_net`) for clean multi-tenant reverse proxying (Caddy) without port conflicts.
-- **Isolated Database Infrastructure**: PostgreSQL 16 initialization script (`init-data.sh`) creating dedicated non-root application users.
-- **Meshnet Infrastructure Plan**: Roadmap (`planning/roadmmap-1.md`) for private deployment over Tailscale/Meshnet and CI/CD via GitHub Actions.
+Key Architectural Capabilities:
+- **Zero-Trust Ingress**: Caddy is bound exclusively to private Meshnet IP interfaces (`100.116.224.88`, `100.64.153.30`) with HTTP/3 UDP 443 support, rendering the server completely invisible to local LAN networks.
+- **Dynamic Secret Injection**: Zero disk secrets in production. All environment variables, database passwords, and encryption keys are injected at runtime via Doppler (`doppler run -- docker compose up -d`).
+- **Host Boot Persistence (`systemd`)**: A host-level unit (`/etc/systemd/system/local-n8n.service`) automatically launches the stack with Doppler runtime injection upon machine reboots, preventing un-injected credential failures.
+- **Scalable Queue Mode**: Separates UI/API handling (`n8n`) from asynchronous execution processing (`n8n-worker`) via Redis Bull queue, supporting horizontal worker scaling.
+- **Automated Data Pruning & Log Rotation**: Protects storage volumes via built-in n8n execution pruning (`EXECUTIONS_DATA_PRUNE=true`, 168-hour retention, 50k max count) and Docker daemon JSON log rotation (`max-size: 10m`, `max-file: 3`).
+- **Multi-Tenant Gateway Network**: Central external bridge (`gateway_net`) enabling unified reverse proxying for both n8n and companion microservices (such as **Lingua**).
 
 ---
 
@@ -22,11 +24,11 @@ Key Features:
 
 ```
 Local-N8n/
-├── compose.yaml                             # Main n8n stack (Postgres, Redis, n8n, n8n-worker)
+├── compose.yaml                             # Main n8n queue stack (Postgres, Redis, n8n, n8n-worker)
 ├── init-data.sh                             # Postgres non-root DB & user setup script
-├── .env / .env-sample                       # Stack environment variables & secrets configuration
+├── .env / .env-sample                       # Local dev template & Doppler schema reference
 ├── gateway/                                 # Central reverse proxy stack
-│   ├── docker-compose.yaml                  # Standalone Caddy service bound to gateway_net
+│   ├── docker-compose.yaml                  # Standalone Caddy service bound to Meshnet IPs
 │   └── Caddyfile                            # Subdomain routing (n8n.local-n8n.com, lingua...)
 ├── caddy/                                   # Legacy / standalone Caddy configs
 │   └── n8n-docker-caddy/
@@ -40,7 +42,7 @@ Local-N8n/
 │       ├── FILE_MANIFEST.md                 # Detailed file inventory & line-by-line purpose
 │       ├── ENVIRONMENT_AND_SECRETS.md       # Env variables, Doppler integration, credentials
 │       └── OPERATIONS_AND_DEPLOYMENT.md     # Commands, lifecycle, WSL2 guide & roadmap summary
-├── README.md                                # Developer onboarding & quickstart instructions
+├── README.md                                # Deployment guide, Meshnet setup & troubleshooting
 ├── DOCKER-WSL.md                            # WSL2 & Docker Desktop configuration guide
 └── WSL.md                                   # Comprehensive Ubuntu WSL2 setup & tuning guide
 ```
@@ -51,11 +53,13 @@ Local-N8n/
 
 | Task / Domain | Key Files to Read / Edit |
 | :--- | :--- |
-| **Main n8n Stack** | [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml), [`.env`](file:///Users/victor/Dev/Local-N8n/.env) |
-| **Database Setup** | [`init-data.sh`](file:///Users/victor/Dev/Local-N8n/init-data.sh), [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml#L40-L57) |
-| **Reverse Proxy / Routing** | [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile), [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml) |
-| **Environment / Variables** | [`.env-sample`](file:///Users/victor/Dev/Local-N8n/.env-sample), [`ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md) |
-| **Deployment / Roadmap** | [`planning/roadmmap-1.md`](file:///Users/victor/Dev/Local-N8n/planning/roadmmap-1.md), [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) |
+| **Main n8n Stack** | [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml), Doppler project `local-n8n/prd` |
+| **Host Boot Persistence** | `/etc/systemd/system/local-n8n.service`, [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md#L63-L120) |
+| **Database Initialization** | [`init-data.sh`](file:///Users/victor/Dev/Local-N8n/init-data.sh), [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml#L49-L71) |
+| **Reverse Proxy & Ingress** | [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml), [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile) |
+| **Environment & Secrets** | [`.env-sample`](file:///Users/victor/Dev/Local-N8n/.env-sample), [`ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md) |
+| **Operations & Troubleshooting** | [`README.md`](file:///Users/victor/Dev/Local-N8n/README.md), [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) |
+| **Roadmap & Expansion** | [`planning/roadmmap-1.md`](file:///Users/victor/Dev/Local-N8n/planning/roadmmap-1.md) |
 | **WSL 2 & System Tuning** | [`WSL.md`](file:///Users/victor/Dev/Local-N8n/WSL.md), [`DOCKER-WSL.md`](file:///Users/victor/Dev/Local-N8n/DOCKER-WSL.md) |
 
 ---
@@ -64,5 +68,5 @@ Local-N8n/
 
 - For **Topology & Architecture**: See [`ARCHITECTURE.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ARCHITECTURE.md).
 - For **File Inventory & Purpose**: See [`FILE_MANIFEST.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/FILE_MANIFEST.md).
-- For **Environment Variables**: See [`ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md).
-- For **Operational Workflows**: See [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md).
+- For **Environment Variables & Secrets**: See [`ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md).
+- For **Operational Workflows & Runbooks**: See [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md).

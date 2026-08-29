@@ -73,6 +73,48 @@ To access the services from your client machine, you must manually point the dom
 3. Flush your DNS cache (e.g., `sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder` on macOS).
 4. Navigate to `https://n8n.local-n8n.com` in your browser.
 
+### Step 4: Host Boot Persistence (Systemd Service)
+To ensure the stack boots automatically upon host restart while preserving Doppler secret injection, a host-level systemd service unit manages the Compose lifecycle.
+
+> **Why Native Docker Restart Fails**: Standard `restart: always` container policies restart containers directly via the Docker daemon on boot, completely bypassing the `doppler run --` runtime injection wrapper. Containers would launch with empty environment variables, causing PostgreSQL and n8n to crash due to missing credentials.
+
+Create `/etc/systemd/system/local-n8n.service`:
+
+```ini
+[Unit]
+Description=Local n8n Stack with Doppler Secrets
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/silver-worker/Local-N8n
+User=silver-worker
+Group=docker
+
+# Clean up stale containers before starting
+ExecStartPre=/usr/bin/docker compose down
+# Inject secrets from Doppler directly into Docker Compose at boot
+ExecStart=/usr/bin/doppler run -- /usr/bin/docker compose up -d
+# Graceful shutdown on host stop/reboot
+ExecStop=/usr/bin/docker compose down
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable local-n8n.service
+sudo systemctl start local-n8n.service
+sudo systemctl status local-n8n.service
+```
+
+*Note: Doppler authentication operates headlessly via the pre-configured directory-level token binding in `/home/silver-worker/Local-N8n`.*
+
 ---
 
 ## Troubleshooting
@@ -84,3 +126,4 @@ To access the services from your client machine, you must manually point the dom
   ```
 - **Connection Refused / Timeout:** Ensure that the Caddy gateway is running and that its ports are correctly bound to your Meshnet IP in `gateway/docker-compose.yaml`.
 - **Containers Cannot Reach Internet:** Ensure NordVPN's firewall is disabled (`nordvpn set firewall off`) so it does not interfere with Docker's internal networking.
+- **Uninjected Containers After Reboot:** Ensure `local-n8n.service` is active (`sudo systemctl status local-n8n.service`) and that containers are not managed solely by daemon-level `restart: always` without the systemd wrapper.

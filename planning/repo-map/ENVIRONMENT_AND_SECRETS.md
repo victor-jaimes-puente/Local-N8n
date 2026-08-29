@@ -1,45 +1,77 @@
 # Environment Variables & Secrets Reference — Local-N8n
 
-> **Scope**: Detailed reference of all environment variables, security patterns, database credential workflows, and secret injection models.
+> **Scope**: Comprehensive dictionary of environment variables, Doppler secret injection workflows, PostgreSQL user lifecycle, and credential security.
 
 ---
 
-## 1. Environment Variable Dictionary
+## 1. Complete Environment Variable Dictionary
 
-| Variable Name | Description | Used In | Example / Default |
+| Variable Name | Description | Used In | Default / Example Value |
 | :--- | :--- | :--- | :--- |
-| `POSTGRES_USER` | Superuser username for PostgreSQL initialization | `compose.yaml`, `init-data.sh` | `postgres` |
-| `POSTGRES_PASSWORD` | Superuser password for PostgreSQL | `compose.yaml` | *(Secret string)* |
+| `POSTGRES_USER` | Superuser username for PostgreSQL cluster | `compose.yaml`, `init-data.sh` | `n8nRootUser` / `postgres` |
+| `POSTGRES_PASSWORD` | Superuser password for PostgreSQL cluster | `compose.yaml` | *(High-entropy secret)* |
 | `POSTGRES_DB` | Primary database name for n8n | `compose.yaml`, `init-data.sh` | `n8n` |
-| `POSTGRES_NON_ROOT_USER` | Application non-root database user | `compose.yaml`, `init-data.sh` | `n8n` |
-| `POSTGRES_NON_ROOT_PASSWORD` | Application non-root database password | `compose.yaml`, `init-data.sh` | *(Secret string)* |
-| `N8N_ENCRYPTION_KEY` | Key used by n8n to encrypt credentials stored in DB | `compose.yaml` | *(32+ char secret)* |
-| `DOMAIN_NAME` | Base domain name for reverse proxy | `compose.yaml`, `Caddyfile` | `local-n8n.com` / `local.test` |
-| `SUBDOMAIN` | Subdomain for n8n instance | `compose.yaml`, `Caddyfile` | `n8n` |
-| `GENERIC_TIMEZONE` | Timezone configured for n8n workflows | `compose.yaml` | `America/Chicago` |
-| `DATA_FOLDER` | Host path for mounted local files accessible by n8n | `compose.yaml` | `/home/user/n8n-data` |
-| `EXECUTIONS_MODE` | Execution mode for n8n (`queue` for Redis worker model) | `compose.yaml` | `queue` |
-| `QUEUE_BULL_REDIS_HOST` | Hostname of Redis service for queue | `compose.yaml` | `redis` |
-| `QUEUE_HEALTH_CHECK_ACTIVE` | Enable active health check for Redis queue | `compose.yaml` | `true` |
-| `NODE_ENV` | Environment mode for n8n process | `compose.yaml` | `production` |
-| `WEBHOOK_URL` | Base public URL for n8n webhooks | `compose.yaml` | `https://${SUBDOMAIN}.${DOMAIN_NAME}/` |
+| `POSTGRES_NON_ROOT_USER` | Dedicated application user created by `init-data.sh` | `compose.yaml`, `init-data.sh` | `n8nRootUser` / `n8n` |
+| `POSTGRES_NON_ROOT_PASSWORD` | Password for application non-root database user | `compose.yaml`, `init-data.sh` | *(High-entropy secret)* |
+| `DB_TYPE` | Database driver type configured in n8n | `compose.yaml` (x-shared) | `postgresdb` |
+| `DB_POSTGRESDB_HOST` | Database host name within internal Docker network | `compose.yaml` (x-shared) | `postgres` |
+| `DB_POSTGRESDB_PORT` | Database port within internal Docker network | `compose.yaml` (x-shared) | `5432` |
+| `DB_POSTGRESDB_DATABASE` | Database name referenced by n8n connection | `compose.yaml` (x-shared) | `${POSTGRES_DB}` (`n8n`) |
+| `DB_POSTGRESDB_USER` | Database username used by n8n connection | `compose.yaml` (x-shared) | `${POSTGRES_NON_ROOT_USER}` |
+| `DB_POSTGRESDB_PASSWORD` | Database password used by n8n connection | `compose.yaml` (x-shared) | `${POSTGRES_NON_ROOT_PASSWORD}` |
+| `N8N_ENCRYPTION_KEY` | 32+ character key for AES credential encryption | `compose.yaml` (x-shared) | *(32+ char high-entropy secret)* |
+| `DOMAIN_NAME` | Base domain name for reverse proxy and webhook URLs | `compose.yaml`, `Caddyfile` | `local-n8n.com` |
+| `SUBDOMAIN` | Subdomain for n8n web application | `compose.yaml`, `Caddyfile` | `n8n` |
+| `N8N_HOST` | Host header expected by n8n web server | `compose.yaml` (x-shared) | `${SUBDOMAIN}.${DOMAIN_NAME}` |
+| `N8N_PORT` | Internal HTTP listening port for n8n service | `compose.yaml` (x-shared) | `5678` |
+| `N8N_PROTOCOL` | External protocol scheme for incoming traffic | `compose.yaml` (x-shared) | `https` |
+| `WEBHOOK_URL` | Public webhook callback URL emitted in workflow triggers | `compose.yaml` (x-shared) | `https://${SUBDOMAIN}.${DOMAIN_NAME}/` |
+| `GENERIC_TIMEZONE` | Default timezone for Cron nodes and workflow scheduling | `compose.yaml` (x-shared) | `America/Chicago` |
+| `EXECUTIONS_MODE` | Runtime architecture mode (`regular` vs `queue`) | `compose.yaml` (x-shared) | `queue` |
+| `QUEUE_BULL_REDIS_HOST` | Hostname of Redis instance handling Bull queue | `compose.yaml` (x-shared) | `redis` |
+| `QUEUE_HEALTH_CHECK_ACTIVE` | Active health check validation on Redis Bull queue | `compose.yaml` (x-shared) | `true` |
+| `EXECUTIONS_DATA_PRUNE` | Enables automatic deletion of historical execution data | `compose.yaml` (x-shared) | `true` |
+| `EXECUTIONS_DATA_MAX_AGE` | Maximum age (in hours) before execution history is purged | `compose.yaml` (x-shared) | `168` (7 days) |
+| `EXECUTIONS_DATA_PRUNE_MAX_COUNT` | Hard ceiling for total execution records retained | `compose.yaml` (x-shared) | `50000` |
+| `NODE_ENV` | Node.js runtime environment flag | `compose.yaml` (x-shared) | `production` |
+| `DATA_FOLDER` | Legacy/local host directory mounted for file exchange | `.env`, `compose.yaml` | `./caddy/n8n-docker-caddy` |
+| `SSL_EMAIL` | Contact email for automated ACME / Let's Encrypt TLS | `.env` | `example@example.com` |
 
 ---
 
-## 2. Secrets Management & File Best Practices
+## 2. Secrets Management & Injection Architecture
 
-1. **Local `.env` Handling**:
-   - `.env` contains active credentials and MUST be ignored by version control (listed in `.gitignore`).
-   - `.env-sample` serves as the sanitized template file committed to Git.
-   - Initial setup copies `.env-sample` -> `.env` (or `.env.local`).
+### Primary Method: Doppler Runtime Secret Injection (Production)
+In the production Meshnet deployment, plaintext credentials are never written to disk in `.env` files. Secrets are managed centrally in Doppler and injected directly into container processes in memory at launch time.
 
-2. **Database Credential Flow**:
-   - During first container launch, `postgres` superuser (`POSTGRES_USER` / `POSTGRES_PASSWORD`) creates the database `POSTGRES_DB`.
-   - `init-data.sh` executes as superuser to create `POSTGRES_NON_ROOT_USER` with `POSTGRES_NON_ROOT_PASSWORD` and grant schema privileges.
-   - `n8n` and `n8n-worker` authenticate exclusively using `POSTGRES_NON_ROOT_USER`.
+```bash
+# 1. Select the project and environment configuration
+doppler setup --project local-n8n --config prd
 
-3. **Roadmap Enhancement: Doppler Secret Injection**:
-   - As outlined in [`planning/roadmmap-1.md`](file:///Users/victor/Dev/Local-N8n/planning/roadmmap-1.md#L10), the recommended production pattern is eliminating disk `.env` files in favor of runtime injection:
-     ```bash
-     doppler run -- docker compose up -d
-     ```
+# 2. Launch Docker Compose with in-memory secrets
+doppler run -- docker compose up -d
+```
+
+**Benefits**:
+- Eliminates accidental credential commits to Git.
+- Centralizes credential rotation for `N8N_ENCRYPTION_KEY` and database passwords.
+- Ensures consistency between `n8n` main service and all scaled `n8n-worker` instances.
+- **Headless Boot Execution**: The Doppler CLI is bound to the repository directory (`/home/silver-worker/Local-N8n`) using a directory-level service token binding, allowing `local-n8n.service` to inject secrets non-interactively upon host boot without requiring manual user login.
+
+### Template & Schema: `.env-sample`
+The [`.env-sample`](file:///Users/victor/Dev/Local-N8n/.env-sample) file acts as the formal schema reference for required secrets in Doppler. It is tracked in Git with placeholder values and descriptive comments.
+
+### Offline & Local Development Fallback: `.env`
+When working completely offline without access to Doppler CLI, developers may copy `.env-sample` to `.env`. The standard `docker compose up -d` command will automatically pick up the local file. **Note**: `.env` is strictly ignored by version control via `.gitignore`.
+
+---
+
+## 3. Database Credential Lifecycle
+
+1. **Bootstrap Phase**:
+   - When PostgreSQL container boots for the first time with an empty volume (`db_storage`), PostgreSQL initializes a database cluster owned by superuser `POSTGRES_USER` with `POSTGRES_PASSWORD`.
+2. **Privilege Delegation (`init-data.sh`)**:
+   - PostgreSQL executes `/docker-entrypoint-initdb.d/init-data.sh` as superuser.
+   - The script creates application user `POSTGRES_NON_ROOT_USER`, sets its password `POSTGRES_NON_ROOT_PASSWORD`, and grants all privileges on `POSTGRES_DB` along with schema creation rights on `public`.
+3. **Application Authentication**:
+   - Both `n8n` and `n8n-worker` authenticate exclusively using `POSTGRES_NON_ROOT_USER` credentials, enforcing the principle of least privilege.
