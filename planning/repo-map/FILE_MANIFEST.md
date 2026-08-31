@@ -20,11 +20,14 @@
 | [`WSL.md`](file:///Users/victor/Dev/Local-N8n/WSL.md) | Markdown | 197 | Comprehensive Ubuntu WSL 2 installation, systemd enablement, networking, and performance tuning guide. |
 | [`planning/roadmmap-1.md`](file:///Users/victor/Dev/Local-N8n/planning/roadmmap-1.md) | Markdown | 22 | 4-Phase Infrastructure Roadmap (Central proxy, n8n queue stack, Lingua CI/CD over Meshnet, guardrails). |
 | [`planning/n8n-mcp-antigrvity-roadmap.md`](file:///Users/victor/Dev/Local-N8n/planning/n8n-mcp-antigrvity-roadmap.md) | Markdown | 114 | 5-Phase implementation roadmap connecting Antigravity IDE to Meshnet n8n via Model Context Protocol (MCP). |
+| [`mcp_config.json`](file:///Users/victor/Dev/Local-N8n/mcp_config.json) | JSON | 23 | Model Context Protocol (MCP) server configuration connecting Antigravity to Meshnet n8n. |
+| [`AGENTS.md`](file:///Users/victor/Dev/Local-N8n/AGENTS.md) | Markdown | 9 | Root agent guidelines and guardrails for Meshnet n8n workflow management. |
+| [`.agents/rules/n8n-mcp.md`](file:///Users/victor/Dev/Local-N8n/.agents/rules/n8n-mcp.md) | Markdown | 7 | Antigravity workspace customization rules for n8n MCP tool usage. |
 | `/etc/systemd/system/local-n8n.service` | Systemd | 24 | Host systemd unit managing boot persistence with Doppler runtime secret injection. |
-| [`planning/repo-map/README.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/README.md) | Markdown | 73 | Agent entry point, repository architecture summary, and quick reference index. |
+| [`planning/repo-map/README.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/README.md) | Markdown | 75 | Agent entry point, repository architecture summary, and quick reference index. |
 | [`planning/repo-map/ARCHITECTURE.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ARCHITECTURE.md) | Markdown | 169 | System topology, Mermaid diagrams, Zero-Trust adapter bindings, systemd boot sequence, and queue lifecycle. |
 | [`planning/repo-map/ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md) | Markdown | 78 | Environment variable dictionary, Doppler runtime injection guide, and directory token binding. |
-| [`planning/repo-map/FILE_MANIFEST.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/FILE_MANIFEST.md) | Markdown | 98 | Complete file index, line counts, and deep component analysis (This file). |
+| [`planning/repo-map/FILE_MANIFEST.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/FILE_MANIFEST.md) | Markdown | 108 | Complete file index, line counts, and deep component analysis (This file). |
 | [`planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) | Markdown | 187 | Step-by-step commands, Doppler launch runbook, systemd unit setup, client DNS setup, and roadmap status. |
 
 ---
@@ -95,3 +98,10 @@
   - **Phase 3**: Antigravity IDE MCP server configuration (`mcp_config.json`) using Doppler runtime wrapper.
   - **Phase 4**: Agent rules and system guardrails for schema validation, queue awareness, and execution pruning.
   - **Phase 5**: Full-cycle validation and workflow scaffolding verification.
+
+### J. [`mcp_config.json`](file:///Users/victor/Dev/Local-N8n/mcp_config.json)
+- MCP server declaration registering `meshnet-n8n` to run `n8n-mcp` via Doppler CLI runtime wrapper (`doppler run --project local-n8n --config prd -- npx -y n8n-mcp`).
+- Configures `N8N_HOST=https://n8n.local-n8n.com` and `NODE_TLS_REJECT_UNAUTHORIZED=0` for Caddy internal TLS.
+
+### K. [`AGENTS.md`](file:///Users/victor/Dev/Local-N8n/AGENTS.md) & [`.agents/rules/n8n-mcp.md`](file:///Users/victor/Dev/Local-N8n/.agents/rules/n8n-mcp.md)
+- Antigravity agent operational guidelines enforcing schema pre-fetching (`get_node_schema`), Queue Mode execution awareness, credential vault separation, inactive staging states (`active: false`), and retention thresholds.

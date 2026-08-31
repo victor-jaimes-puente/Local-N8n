@@ -59,7 +59,9 @@ Local-N8n/
 | **Reverse Proxy & Ingress** | [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml), [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile) |
 | **Environment & Secrets** | [`.env-sample`](file:///Users/victor/Dev/Local-N8n/.env-sample), [`ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md) |
 | **Operations & Troubleshooting** | [`README.md`](file:///Users/victor/Dev/Local-N8n/README.md), [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) |
-| **Roadmap & Expansion** | [`planning/roadmmap-1.md`](file:///Users/victor/Dev/Local-N8n/planning/roadmmap-1.md) |
+| **MCP Server Config** | [`mcp_config.json`](file:///Users/victor/Dev/Local-N8n/mcp_config.json), [`.agents/mcp_config.json`](file:///Users/victor/Dev/Local-N8n/.agents/mcp_config.json) |
+| **Agent Rules & Guardrails** | [`AGENTS.md`](file:///Users/victor/Dev/Local-N8n/AGENTS.md), [`.agents/rules/n8n-mcp.md`](file:///Users/victor/Dev/Local-N8n/.agents/rules/n8n-mcp.md) |
+| **Roadmap & Expansion** | [`planning/roadmmap-1.md`](file:///Users/victor/Dev/Local-N8n/planning/roadmmap-1.md), [`planning/n8n-mcp-antigrvity-roadmap.md`](file:///Users/victor/Dev/Local-N8n/planning/n8n-mcp-antigrvity-roadmap.md) |
 | **WSL 2 & System Tuning** | [`WSL.md`](file:///Users/victor/Dev/Local-N8n/WSL.md), [`DOCKER-WSL.md`](file:///Users/victor/Dev/Local-N8n/DOCKER-WSL.md) |
 
 ---
