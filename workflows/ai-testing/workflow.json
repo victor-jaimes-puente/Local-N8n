@@ -1,0 +1,214 @@
+{
+  "name": "AI-TESTING",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "10101010-0001-4000-8000-000000000001",
+      "name": "When clicking \"Test workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "prompt-id",
+              "name": "prompt",
+              "value": "Explain quantum computing in two concise sentences.",
+              "type": "string"
+            },
+            {
+              "id": "system-id",
+              "name": "systemMessage",
+              "value": "You are a helpful, concise AI research assistant.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "10101010-0001-4000-8000-000000000002",
+      "name": "Test Prompt Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "hasOutputParser": false,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "={{ $json.systemMessage }}",
+              "type": "system"
+            }
+          ]
+        }
+      },
+      "id": "10101010-0001-4000-8000-000000000003",
+      "name": "Local AI Inference Chain",
+      "type": "n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        720,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "model": "llama3.2",
+        "options": {
+          "baseURL": "http://host.docker.internal:11434/v1",
+          "temperature": 0.7
+        }
+      },
+      "id": "10101010-0001-4000-8000-000000000004",
+      "name": "Local OpenAI-Compatible Model",
+      "type": "n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "hasOutputParser": false,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "={{ $json.systemMessage }}",
+              "type": "system"
+            }
+          ]
+        }
+      },
+      "id": "10101010-0001-4000-8000-000000000005",
+      "name": "Google Gemini Inference Chain",
+      "type": "n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        720,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.5-flash",
+        "options": {
+          "baseURL": "https://generativelanguage.googleapis.com/v1beta/openai/",
+          "temperature": 0.7
+        }
+      },
+      "id": "10101010-0001-4000-8000-000000000006",
+      "name": "Gemini OpenAI-Compatible Model",
+      "type": "n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        760
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prompt = $(\"Test Prompt Input\").first().json.prompt;\nconst localResponse = $(\"Local AI Inference Chain\").first().json.text || $(\"Local AI Inference Chain\").first().json;\nconst geminiResponse = $(\"Google Gemini Inference Chain\").first().json.text || $(\"Google Gemini Inference Chain\").first().json;\n\nreturn [{\n  json: {\n    benchmark: \"AI Inference Provider Comparison\",\n    prompt: prompt,\n    timestamp: new Date().toISOString(),\n    providers: {\n      local_openai_compatible: {\n        model: \"Local Model (e.g. llama3.2 / ollama / vLLM)\",\n        endpoint: \"http://host.docker.internal:11434/v1\",\n        response: localResponse\n      },\n      google_gemini_openai_compatible: {\n        model: \"gemini-2.5-flash\",\n        endpoint: \"https://generativelanguage.googleapis.com/v1beta/openai/\",\n        response: geminiResponse\n      }\n    }\n  }\n}];"
+      },
+      "id": "10101010-0001-4000-8000-000000000007",
+      "name": "Compare & Format Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        360
+      ]
+    }
+  ],
+  "connections": {
+    "When clicking \"Test workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Test Prompt Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Prompt Input": {
+      "main": [
+        [
+          {
+            "node": "Local AI Inference Chain",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Gemini Inference Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Local OpenAI-Compatible Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Local AI Inference Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini OpenAI-Compatible Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Google Gemini Inference Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Local AI Inference Chain": {
+      "main": [
+        [
+          {
+            "node": "Compare & Format Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Inference Chain": {
+      "main": [
+        [
+          {
+            "node": "Compare & Format Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

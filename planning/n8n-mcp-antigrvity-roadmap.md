@@ -36,10 +36,10 @@ Generate n8n administrative tokens and store them within the Doppler production 
 3. Name the key `antigravity-mcp-bridge` and copy the value.
 
 ### 2.2 Inject Token into Doppler Secrets Engine
-Store the secret in Doppler under the `local-n8n/prd` configuration rather than writing it to disk in plaintext:
+Store the secret in Doppler under the `silver-worker/prd` configuration rather than writing it to disk in plaintext:
 
 ```bash
-doppler secrets set N8N_MCP_API_KEY="<YOUR_N8N_API_KEY>" --project local-n8n --config prd
+doppler secrets set N8N_MCP_API_KEY="<YOUR_N8N_API_KEY>" --project silver-worker --config prd
 ```
 
 ---
@@ -59,7 +59,7 @@ Open your global (`~/.gemini/antigravity-ide/mcp_config.json` / `~/.antigravity/
       "args": [
         "run",
         "--project",
-        "local-n8n",
+        "silver-worker",
         "--config",
         "prd",
         "--",

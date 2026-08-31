@@ -19,7 +19,7 @@ docker compose up -d
 cd ..
 
 # 3. Configure Doppler project scope (first time or when switching environments)
-doppler setup --project local-n8n --config prd
+doppler setup --project silver-worker --config prd
 
 # 4. Start main n8n stack with runtime secret injection
 doppler run -- docker compose up -d
@@ -184,3 +184,29 @@ Add the following line to the client machine's hosts file:
 | **Phase 2** | **Private n8n Stack Deployment** | Queue mode with Redis Bull queue, PostgreSQL isolation, Doppler CLI runtime secret injection (`doppler run`), execution data pruning (`EXECUTIONS_DATA_PRUNE=true`, 168h retention), log rotation policies. | **Completed** |
 | **Phase 3** | **CI/CD Pipeline for Lingua Dev** | Automated deployment via GitHub Actions (`.github/workflows/deploy.yml`) over Meshnet static IP (100.x.x.x), internal network isolation (`lingua_backend`). | **Planned / Next** |
 | **Phase 4** | **Resource Management & Guardrails** | Machine learning container memory limits (LibreTranslate 2GB RAM cap), MariaDB/Postgres healthchecks, automated host backup cron (`pg_dump`, `mariadb-dump`). | **Planned** |
+
+---
+
+## 6. Workflows & Code Sandbox Operations
+
+### Exporting & Versioning Workflows
+Workflows exported from n8n should be saved in `workflows/<workflow-slug>/` following repository standards:
+```bash
+# Workflow directory structure:
+# workflows/<workflow-slug>/workflow.json (Pretty-printed JSON definition)
+# workflows/<workflow-slug>/README.md     (Topology, triggers, credential IDs, test instructions)
+```
+
+### Code Sandbox Service Deployment (`sysbox-runc`)
+To run the isolated Docker-in-Docker code sandbox alongside the stack:
+```bash
+# 1. Install sysbox-runc runtime on Ubuntu host (one-time setup)
+curl -fsSL -o setup-sysbox.sh https://raw.githubusercontent.com/n8n-io/n8n-sandbox-service/refs/heads/main/scripts/setup-sysbox.sh
+chmod +x setup-sysbox.sh && sudo ./setup-sysbox.sh
+
+# 2. Inject SANDBOX_API_KEY into Doppler
+doppler secrets set SANDBOX_API_KEY="$(openssl rand -hex 24)" --project silver-worker --config prd
+
+# 3. Start Sandbox Stack
+cd sandbox && doppler run -- docker compose up -d
+```

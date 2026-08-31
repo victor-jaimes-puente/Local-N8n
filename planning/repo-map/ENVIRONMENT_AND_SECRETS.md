@@ -36,6 +36,9 @@
 | `NODE_ENV` | Node.js runtime environment flag | `compose.yaml` (x-shared) | `production` |
 | `DATA_FOLDER` | Legacy/local host directory mounted for file exchange | `.env`, `compose.yaml` | `./caddy/n8n-docker-caddy` |
 | `SSL_EMAIL` | Contact email for automated ACME / Let's Encrypt TLS | `.env` | `example@example.com` |
+| `N8N_MCP_API_KEY` | n8n REST API key for Antigravity MCP integration | `mcp_config.json`, Doppler | *(High-entropy secret token)* |
+| `SANDBOX_API_KEY` | Secret token authenticating n8n to local code sandbox | `sandbox/` stack, Doppler | *(High-entropy secret token)* |
+| `SANDBOX_API_PORT` | Port for self-hosted code sandbox API service | `sandbox/` stack | `3200` |
 
 ---
 
@@ -46,7 +49,7 @@ In the production Meshnet deployment, plaintext credentials are never written to
 
 ```bash
 # 1. Select the project and environment configuration
-doppler setup --project local-n8n --config prd
+doppler setup --project silver-worker --config prd
 
 # 2. Launch Docker Compose with in-memory secrets
 doppler run -- docker compose up -d
@@ -54,9 +57,10 @@ doppler run -- docker compose up -d
 
 **Benefits**:
 - Eliminates accidental credential commits to Git.
-- Centralizes credential rotation for `N8N_ENCRYPTION_KEY` and database passwords.
+- Centralizes credential rotation for `N8N_ENCRYPTION_KEY`, database passwords, `N8N_MCP_API_KEY`, and `SANDBOX_API_KEY`.
 - Ensures consistency between `n8n` main service and all scaled `n8n-worker` instances.
 - **Headless Boot Execution**: The Doppler CLI is bound to the repository directory (`/home/silver-worker/Local-N8n`) using a directory-level service token binding, allowing `local-n8n.service` to inject secrets non-interactively upon host boot without requiring manual user login.
+- **MCP Client Injection**: The Antigravity MCP configuration calls `doppler run --project silver-worker --config prd -- npx -y n8n-mcp`, providing the `N8N_MCP_API_KEY` directly from the secret store without placing tokens in plain text in config files.
 
 ### Template & Schema: `.env-sample`
 The [`.env-sample`](file:///Users/victor/Dev/Local-N8n/.env-sample) file acts as the formal schema reference for required secrets in Doppler. It is tracked in Git with placeholder values and descriptive comments.

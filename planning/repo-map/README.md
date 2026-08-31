@@ -34,8 +34,25 @@ Local-N8n/
 │   └── n8n-docker-caddy/
 │       └── caddy_config/
 │           └── Caddyfile                    # Alternate Caddy configuration (n8n.local.test)
+├── workflows/                               # Exported n8n workflow JSONs & documentation
+│   ├── README.md                            # Workflows directory index
+│   ├── meshnet-health-check/                # Meshnet HTTP ingress health probe
+│   │   ├── workflow.json                    # Formatted workflow JSON
+│   │   └── README.md                        # Flow topology & test instructions
+│   └── ai-testing/                          # Multi-provider AI inference testing flow
+│       ├── workflow.json                    # Formatted workflow JSON
+│       └── README.md                        # OpenAI-compatible local vs Gemini docs
+├── .agents/                                 # Antigravity IDE customizations & MCP config
+│   ├── mcp_config.json                      # Workspace MCP server configuration
+│   ├── sample_mcp_config.json               # Sanitized MCP configuration template
+│   └── rules/
+│       └── n8n-mcp.md                       # Antigravity workspace rules for n8n MCP
+├── AGENTS.md                                # Root agent guidelines & Meshnet n8n guardrails
 ├── planning/                                # Planning & architecture documentation
 │   ├── roadmmap-1.md                        # 4-Phase Meshnet Infrastructure Roadmap
+│   ├── n8n-mcp-antigrvity-roadmap.md        # 5-Phase Antigravity MCP integration plan
+│   ├── Deploying Self-Hosted n8n Code Sandbox/
+│   │   └── plan.md                          # Implementation plan for isolated code sandbox (sysbox)
 │   └── repo-map/                            # Agent Repository Map (This directory)
 │       ├── README.md                        # Main navigation & summary index
 │       ├── ARCHITECTURE.md                  # Network topology, services & scaling specs
@@ -53,12 +70,14 @@ Local-N8n/
 
 | Task / Domain | Key Files to Read / Edit |
 | :--- | :--- |
-| **Main n8n Stack** | [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml), Doppler project `local-n8n/prd` |
-| **Host Boot Persistence** | `/etc/systemd/system/local-n8n.service`, [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md#L63-L120) |
-| **Database Initialization** | [`init-data.sh`](file:///Users/victor/Dev/Local-N8n/init-data.sh), [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml#L49-L71) |
+| **Main n8n Stack** | [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml), Doppler project `silver-worker/prd` |
+| **Host Boot Persistence** | `/etc/systemd/system/local-n8n.service`, [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) |
+| **Database Initialization** | [`init-data.sh`](file:///Users/victor/Dev/Local-N8n/init-data.sh), [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml) |
 | **Reverse Proxy & Ingress** | [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml), [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile) |
 | **Environment & Secrets** | [`.env-sample`](file:///Users/victor/Dev/Local-N8n/.env-sample), [`ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md) |
 | **Operations & Troubleshooting** | [`README.md`](file:///Users/victor/Dev/Local-N8n/README.md), [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) |
+| **Exported Workflows** | [`workflows/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/README.md), [`workflows/meshnet-health-check/`](file:///Users/victor/Dev/Local-N8n/workflows/meshnet-health-check/), [`workflows/ai-testing/`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/) |
+| **Code Sandbox Integration** | [`planning/Deploying Self-Hosted n8n Code Sandbox/plan.md`](file:///Users/victor/Dev/Local-N8n/planning/Deploying%20Self-Hosted%20n8n%20Code%20Sandbox/plan.md) |
 | **MCP Server Config** | [`mcp_config.json`](file:///Users/victor/Dev/Local-N8n/mcp_config.json), [`.agents/mcp_config.json`](file:///Users/victor/Dev/Local-N8n/.agents/mcp_config.json) |
 | **Agent Rules & Guardrails** | [`AGENTS.md`](file:///Users/victor/Dev/Local-N8n/AGENTS.md), [`.agents/rules/n8n-mcp.md`](file:///Users/victor/Dev/Local-N8n/.agents/rules/n8n-mcp.md) |
 | **Roadmap & Expansion** | [`planning/roadmmap-1.md`](file:///Users/victor/Dev/Local-N8n/planning/roadmmap-1.md), [`planning/n8n-mcp-antigrvity-roadmap.md`](file:///Users/victor/Dev/Local-N8n/planning/n8n-mcp-antigrvity-roadmap.md) |

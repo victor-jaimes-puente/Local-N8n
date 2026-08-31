@@ -56,7 +56,7 @@ The n8n stack (n8n, worker, postgres, redis) relies on Doppler for its secrets.
 cd ..
 
 # Ensure your Doppler project is scoped correctly
-doppler setup --project local-n8n --config prd
+doppler setup --project silver-worker --config prd
 
 # Boot the application stack with injected secrets
 doppler run -- docker compose up -d

@@ -1,0 +1,77 @@
+{
+  "name": "Meshnet-Health-Check",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "meshnet-health-check",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "id": "6f4e66d9-f5ba-411a-82ee-0ccbb8c8eef1",
+      "webhookId": "44008f60-7c16-4735-8cbb-3276184321e2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    status: \"healthy\",\n    timestamp: new Date().toISOString(),\n    service: \"local-n8n-meshnet\",\n    executions_mode: \"queue\"\n  }\n}];"
+      },
+      "name": "Generate Timestamp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        300
+      ],
+      "id": "1c7a5fa8-e8f0-466d-9721-a3f295b9550b"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        690,
+        300
+      ],
+      "id": "d6a541fa-e9b4-4b53-b3c9-04fa36592237"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Generate Timestamp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Timestamp": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

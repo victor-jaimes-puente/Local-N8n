@@ -19,7 +19,7 @@ graph TD
     end
     
     subgraph DopplerEnv["Doppler Secret Engine"]
-        DopplerCLI[Doppler CLI (local-n8n/prd)]
+        DopplerCLI[Doppler CLI (silver-worker/prd)]
     end
     
     DopplerCLI -.->|Inject Env at Runtime| N8NMain
@@ -166,3 +166,32 @@ sequenceDiagram
 3. **Execution**: One or more `n8n-worker` instances pick up the job from the Redis Bull queue, execute the node logic, and stream progress events.
 4. **Result Storage**: The worker commits output data and execution history directly to PostgreSQL.
 5. **Pruning & Maintenance**: Every hour, n8n's background pruner deletes execution history older than 168 hours or exceeding 50,000 entries, preventing unconstrained database growth.
+
+---
+
+## 6. Ecosystem & Agent Integrations
+
+```mermaid
+graph TD
+    subgraph AgentHost["Dev Client / IDE (Antigravity)"]
+        AgyAgent["Antigravity Agent"]
+        MCPClient["n8n-mcp Client Wrapper"]
+        AgyAgent <-->|MCP Protocol| MCPClient
+    end
+
+    MCPClient -->|HTTPS API over Meshnet (100.116.224.88)| GatewayCaddy
+    GatewayCaddy -->|Proxy| N8NMain
+
+    subgraph SandboxHost["Isolated Code Execution (Host / sysbox-runc)"]
+        N8NMain -->|HTTP POST /v1/sandboxes :3200| SandboxAPI["sandbox-api"]
+        SandboxAPI <-->|gRPC mTLS| SandboxRunner["sandbox-runner (sysbox)"]
+        SandboxRunner -->|Spawns| MicroBox["Isolated Code Sandbox (JS / Python)"]
+    end
+```
+
+1. **Antigravity Model Context Protocol (MCP)**:
+   - Antigravity pair programming agents interface directly with the production n8n instance via the `meshnet-n8n` MCP server.
+   - All interactions run through `n8n-mcp` over the encrypted Meshnet gateway (`https://n8n.local-n8n.com`), allowing agents to inspect node schemas (`get_node_schema`), validate active executions (`execute_workflow`), and manage workflows programmatically without exposing raw database credentials.
+2. **Self-Hosted Isolated Code Sandbox (`sysbox-runc`)**:
+   - For code-execution nodes and AI Assistant tools, n8n can dispatch JavaScript/Python code execution to an isolated companion service (`n8n-sandbox-service`).
+   - Utilizes `sysbox-runc` for unprivileged container isolation, guaranteeing safe execution without risk to host filesystem or production Docker daemon.
