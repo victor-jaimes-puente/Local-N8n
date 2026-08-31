@@ -1,1 +1,5 @@
 .env
+.agents/mcp_config.json
+mcp_config.json
+.DS_Store
+

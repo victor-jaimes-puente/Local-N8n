@@ -20,9 +20,10 @@
 | [`WSL.md`](file:///Users/victor/Dev/Local-N8n/WSL.md) | Markdown | 197 | Comprehensive Ubuntu WSL 2 installation, systemd enablement, networking, and performance tuning guide. |
 | [`planning/roadmmap-1.md`](file:///Users/victor/Dev/Local-N8n/planning/roadmmap-1.md) | Markdown | 22 | 4-Phase Infrastructure Roadmap (Central proxy, n8n queue stack, Lingua CI/CD over Meshnet, guardrails). |
 | [`planning/n8n-mcp-antigrvity-roadmap.md`](file:///Users/victor/Dev/Local-N8n/planning/n8n-mcp-antigrvity-roadmap.md) | Markdown | 114 | 5-Phase implementation roadmap connecting Antigravity IDE to Meshnet n8n via Model Context Protocol (MCP). |
-| [`mcp_config.json`](file:///Users/victor/Dev/Local-N8n/mcp_config.json) | JSON | 23 | Model Context Protocol (MCP) server configuration connecting Antigravity to Meshnet n8n. |
+| [`.agents/sample_mcp_config.json`](file:///Users/victor/Dev/Local-N8n/.agents/sample_mcp_config.json) | JSON | 23 | Sanitized template for Model Context Protocol (MCP) server configuration. |
 | [`AGENTS.md`](file:///Users/victor/Dev/Local-N8n/AGENTS.md) | Markdown | 9 | Root agent guidelines and guardrails for Meshnet n8n workflow management. |
 | [`.agents/rules/n8n-mcp.md`](file:///Users/victor/Dev/Local-N8n/.agents/rules/n8n-mcp.md) | Markdown | 7 | Antigravity workspace customization rules for n8n MCP tool usage. |
+| [`mcp_config.json`](file:///Users/victor/Dev/Local-N8n/mcp_config.json) *(Gitignored)* | JSON | 23 | Active MCP server configuration containing credentials (ignored by VCS). |
 | `/etc/systemd/system/local-n8n.service` | Systemd | 24 | Host systemd unit managing boot persistence with Doppler runtime secret injection. |
 | [`planning/repo-map/README.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/README.md) | Markdown | 75 | Agent entry point, repository architecture summary, and quick reference index. |
 | [`planning/repo-map/ARCHITECTURE.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ARCHITECTURE.md) | Markdown | 169 | System topology, Mermaid diagrams, Zero-Trust adapter bindings, systemd boot sequence, and queue lifecycle. |
