@@ -4,9 +4,9 @@
   "active": false,
   "activeVersionId": null,
   "createdAt": "2026-08-31T22:53:10.950Z",
-  "updatedAt": "2026-09-01T03:49:57.099Z",
+  "updatedAt": "2026-09-01T07:08:21.569Z",
   "isArchived": false,
-  "versionId": "dbe10910-7b37-4eeb-a649-0bc53668a15a",
+  "versionId": "0b9cbcd4-da6f-42fb-9b6a-7bb16fe12c95",
   "triggerCount": 0,
   "nodes": [
     {
@@ -68,7 +68,7 @@
         "promptType": "define",
         "text": "={{ $json.chatInput || $json.prompt || \"Hello! Test connection.\" }}",
         "options": {
-          "systemMessage": "You are a helpful AI assistant running locally on LM Studio (Hulk). You have access to a SearXNG web search tool (searxng_web_search). When asked about real-time data, current facts, weather, water levels, or recent news, ALWAYS call the searxng_web_search tool to fetch live information before answering. Your output will me formatted in proper markdown .md"
+          "systemMessage": "You are a helpful AI assistant running locally on LM Studio (Hulk). You have access to a live web search tool (searxng_web_search). When asked about current events, breaking news, real-time facts, people, places, or technical documentation, ALWAYS call the searxng_web_search tool with a concise search query before answering. Format your response in markdown."
         }
       },
       "id": "ffe9d70f-e9c2-48e8-863b-baa0be2a66f4",
@@ -113,9 +113,11 @@
     {
       "parameters": {
         "name": "searxng_web_search",
-        "description": "Search the live web using SearXNG for current news, real-time facts, water levels, weather, recent developments, or documentation. Input is a search query string.",
-        "jsCode": "\nlet searchTarget = \"\";\nif (typeof query === \"string\") {\n  searchTarget = query;\n} else if (typeof query === \"object\" && query !== null) {\n  searchTarget = query.query || query.input || query.searchQuery || query.q || \"\";\n} else if (typeof input === \"string\") {\n  searchTarget = input;\n} else if (typeof input === \"object\" && input !== null) {\n  searchTarget = input.query || input.input || input.searchQuery || input.q || \"\";\n}\n\nif (!searchTarget) {\n  searchTarget = \"canyon lake texas water level 78133\";\n}\n\nconst q = encodeURIComponent(searchTarget);\n\ntry {\n  const data = await this.helpers.httpRequest({\n    method: \"GET\",\n    url: `http://searxng:8080/search?q=${q}&format=json`,\n    json: true\n  });\n  const results = (data && data.results ? data.results : []).slice(0, 5).map((r, i) => `${i+1}. [${r.title}](${r.url})\\n${r.content}`).join(\"\\n\\n\");\n  return results || \"No results found for query: \" + searchTarget;\n} catch (err) {\n  return `Error querying SearXNG: ${err.message}`;\n}\n",
-        "specifyInputSchema": true
+        "description": "Search the live web using SearXNG for current news, facts, recent developments, and documentation. The input parameter query is a search query string.",
+        "jsCode": "let searchTarget = \"\";\n\nif (typeof query === \"string\") {\n  searchTarget = query;\n} else if (typeof query === \"object\" && query !== null) {\n  searchTarget = query.query || query.input || query.searchQuery || query.q || query.some_input || query.search || query.text || query.keywords || \"\";\n  if (!searchTarget) {\n    for (const [key, val] of Object.entries(query)) {\n      if (typeof val === \"string\" && val.trim().length > 0) {\n        searchTarget = val;\n        break;\n      }\n    }\n  }\n} else if (typeof input === \"string\") {\n  searchTarget = input;\n} else if (typeof input === \"object\" && input !== null) {\n  searchTarget = input.query || input.input || input.searchQuery || input.q || input.some_input || input.search || input.text || input.keywords || \"\";\n  if (!searchTarget) {\n    for (const [key, val] of Object.entries(input)) {\n      if (typeof val === \"string\" && val.trim().length > 0) {\n        searchTarget = val;\n        break;\n      }\n    }\n  }\n}\n\nsearchTarget = (searchTarget || \"\").trim();\n\nif (!searchTarget) {\n  return \"No search query provided to SearXNG.\";\n}\n\nconst q = encodeURIComponent(searchTarget);\n\ntry {\n  const data = await this.helpers.httpRequest({\n    method: \"GET\",\n    url: `http://searxng:8080/search?q=${q}&format=json`,\n    json: true\n  });\n  const results = (data && data.results ? data.results : []).slice(0, 6).map((r, i) => `${i+1}. [${r.title}](${r.url})\\n${r.content}`).join(\"\\n\\n\");\n  return results || \"No search results found for query: \" + searchTarget;\n} catch (err) {\n  return `Error querying SearXNG: ${err.message}`;\n}\n",
+        "specifyInputSchema": true,
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"query\": \"the search query string\"\n}"
       },
       "id": "tool-searxng-websearch",
       "name": "SearXNG Web Search",

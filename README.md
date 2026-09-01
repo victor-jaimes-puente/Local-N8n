@@ -1,147 +1,92 @@
 # Local n8n over NordVPN Meshnet (Docker Compose)
 
-This repository contains the deployment configuration for running a private n8n stack and Lingua application on an Ubuntu server (Dell Precision 5480), securely accessible over a NordVPN Meshnet tunnel using a Zero-Trust architecture.
+This repository contains the deployment configuration and workflow definitions for running a private n8n stack and Lingua application on an Ubuntu server (Dell Precision 5480), securely accessible over a NordVPN Meshnet tunnel using a Zero-Trust architecture.
+
+---
+
+## Repository Map
+
+```
+Local-N8n/
+├── README.md                          # Main deployment & architectural documentation
+├── compose.yaml                       # Core Docker Compose definition (n8n, worker, postgres, redis)
+├── mcp_config.json                    # Antigravity / Claude MCP server connection profile
+├── caddy/                             # Caddy reverse proxy configurations
+├── gateway/                           # Standalone Meshnet Caddy gateway Docker Compose stack
+├── planning/                          # Architectural roadmaps and implementation designs
+├── sandbox/                           # Execution sandbox configurations
+├── scripts/                           # Local helper scripts (e.g. export-workflows.js)
+├── searxng/                           # Self-hosted SearXNG search engine settings
+├── server-scripts/                    # Operational control scripts (start-all, stop-all, status-all)
+├── systemd/                           # Systemd service unit files for boot persistence
+└── workflows/                         # Version-controlled n8n workflow definitions
+    ├── README.md                      # Comprehensive workflow catalog & map
+    ├── ai-testing/                    # Local LLM prompt & chat evaluation workflow
+    ├── meshnet-health-check/          # Zero-trust health probe endpoint
+    ├── slack/                         # Slack ingress router & webhook dispatcher
+    ├── slack-ai-agent/                # Threaded conversational Slack AI sub-workflow
+    └── tool-searxng-search/           # Reusable SearXNG web search tool workflow
+```
 
 ---
 
 ## Architecture & Networking Overview
 
-The infrastructure was successfully deployed with the following core configurations:
+The infrastructure operates with the following core configurations:
 
 ### 1. Secret Management & Container Initialization
-- **Doppler Runtime Injection:** Environment variables are no longer stored in a local `.env` file on disk. Instead, secrets are securely injected directly into memory at runtime using the `doppler run -- docker compose ...` wrapper.
-- **Database Initialization:** Corrupted PostgreSQL database volumes caused by early unauthenticated boot attempts were destroyed (`docker compose down -v`), allowing the database to initialize properly with the correct superuser passwords injected by Doppler.
+- **Doppler Runtime Injection:** Environment variables are not stored in a local `.env` file on disk. Instead, secrets are injected directly into memory at runtime using the `doppler run -- docker compose ...` wrapper.
+- **Zero-Disk Secret Policy:** Workflow definitions reference secure Credential IDs within the PostgreSQL vault without embedding plaintext tokens or keys on disk.
 
 ### 2. Client DNS & Host File Overrides
-- **Custom Subdomains:** Local hosts files on client machines are configured to manually map the custom subdomains (`n8n.local-n8n.com` and `lingua.local-n8n.com`) directly to the server's static Meshnet IP (`100.116.224.88`).
-- **DNS Resolution Fixes:** Conflicting `127.0.0.1` loopback entries were cleared from the macOS hosts file, and the DNS cache (`mDNSResponder`) was flushed to force the browser to route traffic correctly through the VPN tunnel.
+- **Custom Subdomains:** Local hosts files on client machines map the custom subdomains (`n8n.local-n8n.com` and `lingua.local-n8n.com`) directly to the server's static Meshnet IP (`100.116.224.88`).
 
 ### 3. Network Security & Firewall Adjustments
-- **NordVPN Firewall:** NordVPN's aggressive internal firewall was disabled (`nordvpn set firewall off`) and the daemon restarted. This prevented NordVPN's iptables from silently dropping return packets destined for Docker's internal subnet.
-- **UFW Native Firewall:** Ubuntu's native UFW was re-enabled as the primary on-machine defense. Port `22` was explicitly allowed beforehand to guarantee SSH access remained active.
+- **NordVPN Firewall:** NordVPN's internal firewall is disabled (`nordvpn set firewall off`) to permit return packets across Docker's internal subnet.
+- **UFW Native Firewall:** Ubuntu's native UFW acts as the primary firewall, strictly allowing SSH and Meshnet traffic.
 
 ### 4. Zero-Trust Gateway Binding
-- **Meshnet Exclusivity:** The Caddy reverse proxy (`gateway/docker-compose.yaml`) abandoned the default `0.0.0.0` binding.
-- **Invisible on Local LAN:** Web ports are bound exclusively to the Meshnet adapters (e.g., `100.116.224.88:443:443`), making the server entirely invisible to other devices on the local home Wi-Fi and strictly enforcing Zero-Trust access.
+- **Meshnet Exclusivity:** The Caddy reverse proxy (`gateway/docker-compose.yaml`) binds exclusively to the Meshnet interface (`100.116.224.88:443:443`), making the server invisible on the local LAN.
 
 ---
 
-## Deployment Guide
+## Workflow Catalog
 
-### Prerequisites
-1. **Ubuntu Server:** Configured with Docker, Docker Compose, and UFW.
-2. **NordVPN Meshnet:** Installed and connected. You must know your server's static Meshnet IP.
-3. **Doppler CLI:** Installed and authenticated on the server for secret injection.
-
-### Step 1: Start the Gateway Proxy
-The Caddy reverse proxy handles all Meshnet routing securely without port conflicts. It runs on a dedicated Docker network (`gateway_net`).
-
-```bash
-# Ensure you're inside the project directory
-cd /path/to/Local-N8n
-
-# Create the shared external network
-docker network create gateway_net
-
-# Start the standalone Caddy gateway
-cd gateway
-docker compose up -d
-```
-
-### Step 2: Start the n8n Application Stack
-The n8n stack (n8n, worker, postgres, redis) relies on Doppler for its secrets.
-
-```bash
-# Return to the main project directory
-cd ..
-
-# Ensure your Doppler project is scoped correctly
-doppler setup --project silver-worker --config prd
-
-# Boot the application stack with injected secrets
-doppler run -- docker compose up -d
-```
-
-### Step 3: Client Configuration
-To access the services from your client machine, you must manually point the domains to the server's Meshnet IP.
-
-1. Open your client's hosts file (e.g., `/etc/hosts` on macOS/Linux, or `C:\Windows\System32\drivers\etc\hosts` on Windows).
-2. Add the following entry, replacing `100.116.224.88` with your server's actual Meshnet IP if it changes:
-   ```text
-   100.116.224.88 n8n.local-n8n.com lingua.local-n8n.com
-   ```
-3. Flush your DNS cache (e.g., `sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder` on macOS).
-4. Navigate to `https://n8n.local-n8n.com` in your browser.
-
-### Step 4: Host Boot Persistence (Systemd Service)
-To ensure the stack boots automatically upon host restart while preserving Doppler secret injection, a host-level systemd service unit manages the Compose lifecycle.
-
-> **Why Native Docker Restart Fails**: Standard `restart: always` container policies restart containers directly via the Docker daemon on boot, completely bypassing the `doppler run --` runtime injection wrapper. Containers would launch with empty environment variables, causing PostgreSQL and n8n to crash due to missing credentials.
-
-Create `/etc/systemd/system/local-n8n.service`:
-
-```ini
-[Unit]
-Description=Local n8n Stack with Doppler Secrets
-Requires=docker.service
-After=docker.service network-online.target
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-WorkingDirectory=/home/silver-worker/Local-N8n
-User=silver-worker
-Group=docker
-
-# Clean up stale containers before starting
-ExecStartPre=/usr/bin/docker compose down
-# Inject secrets from Doppler directly into Docker Compose at boot
-ExecStart=/usr/bin/doppler run -- /usr/bin/docker compose up -d
-# Graceful shutdown on host stop/reboot
-ExecStop=/usr/bin/docker compose down
-TimeoutStopSec=60
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start the service:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable local-n8n.service
-sudo systemctl start local-n8n.service
-sudo systemctl status local-n8n.service
-```
-
-*Note: Doppler authentication operates headlessly via the pre-configured directory-level token binding in `/home/silver-worker/Local-N8n`.*
+| Directory | Workflow | Remote ID | Primary Trigger | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| [`workflows/slack/`](./workflows/slack/) | `Slack` | `8irpSdMtOgDVxsSb` | Webhook (`POST /slack-events`) | Public Slack ingress router with immediate 200 OK acknowledgment and bot loop filtering. |
+| [`workflows/slack-ai-agent/`](./workflows/slack-ai-agent/) | `slack-ai-agent` | `Fq6gdZ5X10eOiCQA` | Sub-Workflow Trigger | Conversational AI sub-workflow powered by Hulk LM Studio, Window Buffer Memory, and SearXNG. |
+| [`workflows/ai-testing/`](./workflows/ai-testing/) | `AI-TESTING` | `5rRB16PM6Tx07ZB0` | Chat / Manual Test | Local LLM chat and manual prompt evaluation playground on Hulk. |
+| [`workflows/tool-searxng-search/`](./workflows/tool-searxng-search/) | `Tool-SearXNG-Search` | `hk8OViFZWBnveSCF` | Sub-Workflow Trigger | Reusable AI Agent Web Search Tool executing live queries against local SearXNG (`http://searxng:8080`). |
+| [`workflows/meshnet-health-check/`](./workflows/meshnet-health-check/) | `Meshnet-Health-Check` | `XRDcHq3GIEZQKprT` | Webhook (`GET /meshnet-health-check`) | Health probe validating HTTP ingress, Redis Bull queue scheduling, and PostgreSQL recording. |
 
 ---
 
 ## Local AI Inference & Web Search over Meshnet
 
 ### 1. LM Studio Local LLM Server (Hulk `100.64.153.30`)
-- **Compute Host (`hulk`)**: `100.64.153.30` running LM Studio on port `1234`.
+- **Compute Host (`hulk`)**: `100.64.153.30` running LM Studio on port `1234` (RTX 4070).
 - **OpenAI-Compatible Base URL**: `http://100.64.153.30:1234/v1`
-- **Windows Port Forwarding**: `netsh interface portproxy add v4tov4 listenport=1234 listenaddress=0.0.0.0 connectport=1234 connectaddress=127.0.0.1`
-- **Workflow Integration**: Use `@n8n/n8n-nodes-langchain.lmChatOpenAi` with Base URL set to `http://100.64.153.30:1234/v1` and OpenAI credential (`hvK9eAePdrKHSgMD`).
+- **Workflow Integration**: Connected via `@n8n/n8n-nodes-langchain.lmChatOpenAi` with `timeout: 360000` (6 minutes) to tolerate cold loads.
 
 ### 2. Self-Hosted SearXNG Search Engine
 - **Service**: Standalone SearXNG container on `gateway_net` (`http://searxng:8080`).
-- **AI Agent Tool**: Connected to LangChain `AI Agent` via `@n8n/n8n-nodes-langchain.toolCode` (Custom Code Tool with JSON Schema) to fetch real-time news, current events, and live web data with zero external API fees.
-- **Verification Command**:
-  ```bash
-  curl "http://100.116.224.88:8088/search?q=n8n&format=json"
-  ```
+- **AI Agent Tool**: Connected to LangChain `AI Agent` via `@n8n/n8n-nodes-langchain.toolCode` to fetch real-time web results with zero external API fees.
 
 ---
 
-## Troubleshooting
+## Deployment & Service Control
 
-- **Database Authentication Errors:** If Postgres fails to authenticate, it may be due to leftover data from a previous misconfigured run. You must destroy the volume and recreate it:
-  ```bash
-  docker compose down -v
-  doppler run -- docker compose up -d
-  ```
-- **Connection Refused / Timeout:** Ensure that the Caddy gateway is running and that its ports are correctly bound to your Meshnet IP in `gateway/docker-compose.yaml`.
-- **Containers Cannot Reach Internet:** Ensure NordVPN's firewall is disabled (`nordvpn set firewall off`) so it does not interfere with Docker's internal networking.
-- **Uninjected Containers After Reboot:** Ensure `local-n8n.service` is active (`sudo systemctl status local-n8n.service`) and that containers are not managed solely by daemon-level `restart: always` without the systemd wrapper.
+### Host Boot Persistence (Systemd Service)
+Managed by `/etc/systemd/system/local-n8n.service`:
+
+```bash
+sudo systemctl status local-n8n.service
+```
+
+### Operational Scripts
+Located in `server-scripts/`:
+- `./server-scripts/status-all.sh`: Check health of all containers and services.
+- `./server-scripts/restart-all.sh`: Clean restart of the entire Docker stack with Doppler injection.
+- `./server-scripts/logs.sh`: View real-time logs for n8n, worker, redis, or postgres.
+- `node scripts/export-workflows.js`: Pull all latest workflow definitions from n8n API into version control.
