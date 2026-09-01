@@ -24,8 +24,10 @@
 | [`workflows/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/README.md) | Markdown | 22 | Workflows directory index and export standards. |
 | [`workflows/meshnet-health-check/workflow.json`](file:///Users/victor/Dev/Local-N8n/workflows/meshnet-health-check/workflow.json) | JSON | 77 | Exported JSON definition for Meshnet-Health-Check workflow. |
 | [`workflows/meshnet-health-check/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/meshnet-health-check/README.md) | Markdown | 67 | Documentation and test guide for Meshnet-Health-Check. |
-| [`workflows/ai-testing/workflow.json`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/workflow.json) | JSON | 181 | Exported JSON definition for AI-TESTING workflow configured with Hulk LM Studio (`http://100.64.153.30:1234/v1`) and SearXNG Web Search tool (`toolCode` with JSON Schema). |
-| [`workflows/ai-testing/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/README.md) | Markdown | 62 | Documentation and architecture for AI-TESTING flow (Interactive Chat & Test Prompt with SearXNG real-time search & 6-min cold load tolerance). |
+| [`workflows/ai-testing/workflow.json`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/workflow.json) | JSON | 215 | Exported JSON definition for AI-TESTING workflow configured with Hulk LM Studio (`http://100.64.153.30:1234/v1`), multi-agent comparison, and SearXNG Web Search tool (`toolWorkflow`). |
+| [`workflows/ai-testing/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/README.md) | Markdown | 58 | Documentation and architecture for AI-TESTING flow (Interactive Chat & Test Prompt with SearXNG sub-workflow tool & 6-min cold load tolerance). |
+| [`workflows/tool-searxng-search/workflow.json`](file:///Users/victor/Dev/Local-N8n/workflows/tool-searxng-search/workflow.json) | JSON | 55 | Exported JSON definition for Tool-SearXNG-Search sub-workflow (`executeWorkflowTrigger` + `httpRequest` to SearXNG). |
+| [`workflows/tool-searxng-search/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/tool-searxng-search/README.md) | Markdown | 35 | Documentation for Tool-SearXNG-Search sub-workflow tool. |
 | [`sandbox/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/sandbox/docker-compose.yaml) | YAML | 103 | Isolated n8n Code Sandbox service Compose stack (`sandbox-api`, `sandbox-runner`, `registry`). |
 | [`sandbox/README.md`](file:///Users/victor/Dev/Local-N8n/sandbox/README.md) | Markdown | 45 | Code sandbox architecture, systemd service guide, and Doppler secrets integration. |
 | [`searxng/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/searxng/docker-compose.yaml) | YAML | 22 | SearXNG metasearch engine Compose definition attached to `gateway_net`. |
@@ -135,6 +137,7 @@
 ### M. [`workflows/`](file:///Users/victor/Dev/Local-N8n/workflows/) (Exported Automations)
 - **`meshnet-health-check/`**: Webhook probe returning server timestamp, health status, and execution mode over Meshnet tunnel.
 - **`ai-testing/`**: Interactive chat and manual prompt evaluation workflow connecting local LLMs on Hulk (`http://100.64.153.30:1234/v1`) with our self-hosted SearXNG metasearch engine (`http://searxng:8080`) for real-time web search capabilities.
+- **`tool-searxng-search/`**: Dedicated sub-workflow (`Tool-SearXNG-Search` / `hk8OViFZWBnveSCF`) serving as a reusable AI Agent Web Search Tool via SearXNG JSON API.
 
 ### N. [`sandbox/`](file:///Users/victor/Dev/Local-N8n/sandbox/) (Code Sandbox Service)
 - **`docker-compose.yaml`**: Official companion stack running `sandbox-api` (port 3200), `sandbox-runner`, and `registry` (port 5050), integrated with `gateway_net` and Doppler secrets (`SANDBOX_API_KEY`).
