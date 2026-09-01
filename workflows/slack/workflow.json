@@ -2,11 +2,11 @@
   "id": "8irpSdMtOgDVxsSb",
   "name": "Slack",
   "active": true,
-  "activeVersionId": "b0a95609-f360-43d3-9215-98f01034eda3",
+  "activeVersionId": "e72b7a0e-80b9-4830-8e6a-7923a6fb9b63",
   "createdAt": "2026-09-01T04:31:01.277Z",
-  "updatedAt": "2026-09-01T07:09:04.665Z",
+  "updatedAt": "2026-09-01T08:07:31.199Z",
   "isArchived": false,
-  "versionId": "0cfd7c11-fc6a-4f34-84a5-a8bb634aee53",
+  "versionId": "e72b7a0e-80b9-4830-8e6a-7923a6fb9b63",
   "triggerCount": 1,
   "nodes": [
     {
@@ -158,7 +158,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body || {};\nconst event = body.event || body;\n\nreturn [{\n  json: {\n    event: {\n      type: event.type || \"message\",\n      channel: event.channel || \"\",\n      user: event.user || \"\",\n      text: event.text || \"\",\n      ts: event.ts || \"\",\n      thread_ts: event.thread_ts || event.ts || \"\"\n    },\n    rawEvent: event,\n    receivedAt: new Date().toISOString()\n  }\n}];"
+        "jsCode": "const body = $input.first().json.body || {};\nconst event = body.event || body;\n\nconst rawText = (event.text || \"\").trim();\nconst cleanedText = rawText.replace(/<@[A-Z0-9]+>/g, \"\").trim().toLowerCase();\n\nconst cancelRegex = /^(stop|cancel|\\/stop|\\/cancel|abort|\\/abort)$/i;\nconst isCancel = cancelRegex.test(cleanedText);\n\nreturn [{\n  json: {\n    event: {\n      type: event.type || \"message\",\n      channel: event.channel || \"\",\n      user: event.user || \"\",\n      text: rawText,\n      cleanedText,\n      ts: event.ts || \"\",\n      thread_ts: event.thread_ts || event.ts || \"\"\n    },\n    isCancel,\n    rawEvent: event,\n    receivedAt: new Date().toISOString()\n  }\n}];"
       },
       "id": "slack-prepare-subwf-payload",
       "name": "Prepare Sub-Workflow Payload",
@@ -190,11 +190,11 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "object"
             }
           ],
           "attemptToConvertTypes": false,
-          "convertFieldsToString": true
+          "convertFieldsToString": false
         },
         "options": {
           "waitForSubWorkflow": false
@@ -205,8 +205,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1440,
-        272
+        1680,
+        360
       ]
     },
     {
@@ -298,6 +298,82 @@
         1024,
         608
       ]
+    },
+    {
+      "id": "slack-route-intent",
+      "name": "Route Message Intent",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1420,
+        272
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-is-cancel",
+              "leftValue": "={{ $json.isCancel }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "slack-cancel-executions",
+      "name": "Cancel Active Executions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        160
+      ],
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst event = item.event || {};\nconst targetThread = event.thread_ts || event.ts || \"\";\nconst targetChannel = event.channel || \"\";\n\nconst N8N_API_KEY = \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NGQ4MTcxOC0xZjVkLTQxNTQtYWMxOC0xMzc2NTk1MzVmZGIiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMmIzZDdjMDMtODZlNi00MGYwLTlhOWMtZjZiYjM2NGI4NzhlIiwiaWF0IjoxNzg4MjE1NzUxfQ.aT_eCBS-0dPfsPLO97o1kJIhXVTIHVpn418gGIx_9LU\";\nconst N8N_API_URL = \"http://n8n:5678/api/v1\";\n\nlet stoppedCount = 0;\nlet details = [];\n\ntry {\n  const listRes = await this.helpers.httpRequest({\n    method: \"GET\",\n    url: `${N8N_API_URL}/executions?status=running&workflowId=Fq6gdZ5X10eOiCQA&includeData=true&limit=10`,\n    headers: {\n      \"X-N8N-API-KEY\": N8N_API_KEY,\n      \"Accept\": \"application/json\"\n    },\n    json: true\n  });\n\n  const runningList = (listRes && listRes.data) ? listRes.data : [];\n\n  for (const exec of runningList) {\n    const trigData = exec.data?.resultData?.runData?.[\"When Executed by Another Workflow\"]?.[0]?.data?.main?.[0]?.[0]?.json?.event;\n    const execThread = trigData?.thread_ts || trigData?.ts || \"\";\n    const execChannel = trigData?.channel || \"\";\n\n    const isMatch = (targetThread && (execThread === targetThread || trigData?.ts === targetThread)) ||\n                    (targetChannel && execChannel === targetChannel);\n\n    if (isMatch || runningList.length === 1) {\n      try {\n        await this.helpers.httpRequest({\n          method: \"POST\",\n          url: `${N8N_API_URL}/executions/${exec.id}/stop`,\n          headers: {\n            \"X-N8N-API-KEY\": N8N_API_KEY,\n            \"Accept\": \"application/json\"\n          },\n          json: true\n        });\n        stoppedCount++;\n        details.push(`Stopped execution ${exec.id}`);\n      } catch (stopErr) {\n        details.push(`Failed to stop ${exec.id}: ${stopErr.message}`);\n      }\n    }\n  }\n\n  if (stoppedCount === 0 && runningList.length > 0) {\n    try {\n      const stopManyRes = await this.helpers.httpRequest({\n        method: \"POST\",\n        url: `${N8N_API_URL}/executions/stop`,\n        headers: {\n          \"X-N8N-API-KEY\": N8N_API_KEY,\n          \"Content-Type\": \"application/json\",\n          \"Accept\": \"application/json\"\n        },\n        body: {\n          status: [\"running\"],\n          workflowId: \"Fq6gdZ5X10eOiCQA\"\n        },\n        json: true\n      });\n      stoppedCount += (stopManyRes && stopManyRes.stopped) ? stopManyRes.stopped : 0;\n    } catch (e) {}\n  }\n} catch (err) {\n  details.push(`Error querying executions: ${err.message}`);\n}\n\nconst cancelMessage = stoppedCount > 0 \n  ? \"🛑 Request cancelled.\" \n  : \"ℹ️ No active request found to cancel.\";\n\nreturn [{\n  json: {\n    event,\n    channel: targetChannel,\n    thread_ts: targetThread,\n    stoppedCount,\n    details,\n    cancelMessage,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      }
+    },
+    {
+      "id": "slack-post-cancel-reply",
+      "name": "Slack: Post Cancel Reply",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1920,
+        160
+      ],
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $json.channel }}",
+          "mode": "name"
+        },
+        "text": "={{ $json.cancelMessage }}",
+        "otherOptions": {
+          "thread_ts": "={{ $json.thread_ts }}"
+        }
+      },
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "aSF0sVdzDzhmMBK3",
+          "name": "TiranoTech"
+        }
+      },
+      "webhookId": "2a447c39-42bd-47ec-9e3a-411b92dbd419"
     }
   ],
   "connections": {
@@ -356,7 +432,7 @@
       "main": [
         [
           {
-            "node": "Call slack-ai-agent",
+            "node": "Route Message Intent",
             "type": "main",
             "index": 0
           }
@@ -406,6 +482,35 @@
           }
         ]
       ]
+    },
+    "Route Message Intent": {
+      "main": [
+        [
+          {
+            "node": "Cancel Active Executions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call slack-ai-agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancel Active Executions": {
+      "main": [
+        [
+          {
+            "node": "Slack: Post Cancel Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "nodeGroups": [],
@@ -429,7 +534,7 @@
     }
   ],
   "activeVersion": {
-    "versionId": "b0a95609-f360-43d3-9215-98f01034eda3",
+    "versionId": "e72b7a0e-80b9-4830-8e6a-7923a6fb9b63",
     "workflowId": "8irpSdMtOgDVxsSb",
     "nodes": [
       {
@@ -519,8 +624,8 @@
         "type": "n8n-nodes-base.respondToWebhook",
         "typeVersion": 1.1,
         "position": [
-          760,
-          100
+          768,
+          112
         ]
       },
       {
@@ -560,8 +665,8 @@
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.2,
         "position": [
-          760,
-          280
+          768,
+          288
         ]
       },
       {
@@ -575,13 +680,13 @@
         "type": "n8n-nodes-base.respondToWebhook",
         "typeVersion": 1.1,
         "position": [
-          980,
-          260
+          992,
+          272
         ]
       },
       {
         "parameters": {
-          "jsCode": "const body = $input.first().json.body || {};\nconst event = body.event || body;\n\nreturn [{\n  json: {\n    event: {\n      type: event.type || \"message\",\n      channel: event.channel || \"\",\n      user: event.user || \"\",\n      text: event.text || \"\",\n      ts: event.ts || \"\",\n      thread_ts: event.thread_ts || event.ts || \"\"\n    },\n    rawEvent: event,\n    receivedAt: new Date().toISOString()\n  }\n}];"
+          "jsCode": "const body = $input.first().json.body || {};\nconst event = body.event || body;\n\nconst rawText = (event.text || \"\").trim();\nconst cleanedText = rawText.replace(/<@[A-Z0-9]+>/g, \"\").trim().toLowerCase();\n\nconst cancelRegex = /^(stop|cancel|\\/stop|\\/cancel|abort|\\/abort)$/i;\nconst isCancel = cancelRegex.test(cleanedText);\n\nreturn [{\n  json: {\n    event: {\n      type: event.type || \"message\",\n      channel: event.channel || \"\",\n      user: event.user || \"\",\n      text: rawText,\n      cleanedText,\n      ts: event.ts || \"\",\n      thread_ts: event.thread_ts || event.ts || \"\"\n    },\n    isCancel,\n    rawEvent: event,\n    receivedAt: new Date().toISOString()\n  }\n}];"
         },
         "id": "slack-prepare-subwf-payload",
         "name": "Prepare Sub-Workflow Payload",
@@ -589,12 +694,11 @@
         "typeVersion": 2,
         "position": [
           1200,
-          260
+          272
         ]
       },
       {
         "parameters": {
-          "source": "database",
           "workflowId": {
             "__rl": true,
             "value": "Fq6gdZ5X10eOiCQA",
@@ -604,9 +708,22 @@
             "mappingMode": "defineBelow",
             "value": {
               "event": "={{ $json.event }}"
-            }
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "event",
+                "displayName": "event",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "object"
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
           },
-          "mode": "once",
           "options": {
             "waitForSubWorkflow": false
           }
@@ -616,8 +733,8 @@
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.2,
         "position": [
-          1440,
-          260
+          1680,
+          360
         ]
       },
       {
@@ -709,6 +826,82 @@
           1024,
           608
         ]
+      },
+      {
+        "id": "slack-route-intent",
+        "name": "Route Message Intent",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          1420,
+          272
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "cond-is-cancel",
+                "leftValue": "={{ $json.isCancel }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "slack-cancel-executions",
+        "name": "Cancel Active Executions",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1680,
+          160
+        ],
+        "parameters": {
+          "jsCode": "const item = $input.first().json;\nconst event = item.event || {};\nconst targetThread = event.thread_ts || event.ts || \"\";\nconst targetChannel = event.channel || \"\";\n\nconst N8N_API_KEY = \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NGQ4MTcxOC0xZjVkLTQxNTQtYWMxOC0xMzc2NTk1MzVmZGIiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMmIzZDdjMDMtODZlNi00MGYwLTlhOWMtZjZiYjM2NGI4NzhlIiwiaWF0IjoxNzg4MjE1NzUxfQ.aT_eCBS-0dPfsPLO97o1kJIhXVTIHVpn418gGIx_9LU\";\nconst N8N_API_URL = \"http://n8n:5678/api/v1\";\n\nlet stoppedCount = 0;\nlet details = [];\n\ntry {\n  const listRes = await this.helpers.httpRequest({\n    method: \"GET\",\n    url: `${N8N_API_URL}/executions?status=running&workflowId=Fq6gdZ5X10eOiCQA&includeData=true&limit=10`,\n    headers: {\n      \"X-N8N-API-KEY\": N8N_API_KEY,\n      \"Accept\": \"application/json\"\n    },\n    json: true\n  });\n\n  const runningList = (listRes && listRes.data) ? listRes.data : [];\n\n  for (const exec of runningList) {\n    const trigData = exec.data?.resultData?.runData?.[\"When Executed by Another Workflow\"]?.[0]?.data?.main?.[0]?.[0]?.json?.event;\n    const execThread = trigData?.thread_ts || trigData?.ts || \"\";\n    const execChannel = trigData?.channel || \"\";\n\n    const isMatch = (targetThread && (execThread === targetThread || trigData?.ts === targetThread)) ||\n                    (targetChannel && execChannel === targetChannel);\n\n    if (isMatch || runningList.length === 1) {\n      try {\n        await this.helpers.httpRequest({\n          method: \"POST\",\n          url: `${N8N_API_URL}/executions/${exec.id}/stop`,\n          headers: {\n            \"X-N8N-API-KEY\": N8N_API_KEY,\n            \"Accept\": \"application/json\"\n          },\n          json: true\n        });\n        stoppedCount++;\n        details.push(`Stopped execution ${exec.id}`);\n      } catch (stopErr) {\n        details.push(`Failed to stop ${exec.id}: ${stopErr.message}`);\n      }\n    }\n  }\n\n  if (stoppedCount === 0 && runningList.length > 0) {\n    try {\n      const stopManyRes = await this.helpers.httpRequest({\n        method: \"POST\",\n        url: `${N8N_API_URL}/executions/stop`,\n        headers: {\n          \"X-N8N-API-KEY\": N8N_API_KEY,\n          \"Content-Type\": \"application/json\",\n          \"Accept\": \"application/json\"\n        },\n        body: {\n          status: [\"running\"],\n          workflowId: \"Fq6gdZ5X10eOiCQA\"\n        },\n        json: true\n      });\n      stoppedCount += (stopManyRes && stopManyRes.stopped) ? stopManyRes.stopped : 0;\n    } catch (e) {}\n  }\n} catch (err) {\n  details.push(`Error querying executions: ${err.message}`);\n}\n\nconst cancelMessage = stoppedCount > 0 \n  ? \"🛑 Request cancelled.\" \n  : \"ℹ️ No active request found to cancel.\";\n\nreturn [{\n  json: {\n    event,\n    channel: targetChannel,\n    thread_ts: targetThread,\n    stoppedCount,\n    details,\n    cancelMessage,\n    timestamp: new Date().toISOString()\n  }\n}];"
+        }
+      },
+      {
+        "id": "slack-post-cancel-reply",
+        "name": "Slack: Post Cancel Reply",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.2,
+        "position": [
+          1920,
+          160
+        ],
+        "parameters": {
+          "authentication": "oAuth2",
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "={{ $json.channel }}",
+            "mode": "name"
+          },
+          "text": "={{ $json.cancelMessage }}",
+          "otherOptions": {
+            "thread_ts": "={{ $json.thread_ts }}"
+          }
+        },
+        "credentials": {
+          "slackOAuth2Api": {
+            "id": "aSF0sVdzDzhmMBK3",
+            "name": "TiranoTech"
+          }
+        },
+        "webhookId": "2a447c39-42bd-47ec-9e3a-411b92dbd419"
       }
     ],
     "connections": {
@@ -767,7 +960,7 @@
         "main": [
           [
             {
-              "node": "Call slack-ai-agent",
+              "node": "Route Message Intent",
               "type": "main",
               "index": 0
             }
@@ -817,6 +1010,35 @@
             }
           ]
         ]
+      },
+      "Route Message Intent": {
+        "main": [
+          [
+            {
+              "node": "Cancel Active Executions",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Call slack-ai-agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Cancel Active Executions": {
+        "main": [
+          [
+            {
+              "node": "Slack: Post Cancel Reply",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "nodeGroups": [],
@@ -824,7 +1046,7 @@
     "name": null,
     "description": null,
     "autosaved": false,
-    "createdAt": "2026-09-01T06:43:45.542Z",
-    "updatedAt": "2026-09-01T06:43:45.542Z"
+    "createdAt": "2026-09-01T08:07:31.200Z",
+    "updatedAt": "2026-09-01T08:07:31.200Z"
   }
 }

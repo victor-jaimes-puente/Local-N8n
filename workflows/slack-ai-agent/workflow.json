@@ -2,11 +2,11 @@
   "id": "Fq6gdZ5X10eOiCQA",
   "name": "slack-ai-agent",
   "active": true,
-  "activeVersionId": "7036eb87-f777-4bc3-b0fa-ba5244718968",
+  "activeVersionId": "598e78f3-981f-4b79-be7f-1e4b4e6ae8b1",
   "createdAt": "2026-09-01T06:14:40.043Z",
-  "updatedAt": "2026-09-01T07:08:12.524Z",
+  "updatedAt": "2026-09-01T08:00:45.202Z",
   "isArchived": false,
-  "versionId": "7036eb87-f777-4bc3-b0fa-ba5244718968",
+  "versionId": "598e78f3-981f-4b79-be7f-1e4b4e6ae8b1",
   "triggerCount": 0,
   "nodes": [
     {
@@ -49,9 +49,9 @@
       "parameters": {
         "model": {
           "__rl": true,
-          "value": "qwen/qwen3.6-35b-a3b",
+          "value": "google/gemma-4-e2b",
           "mode": "list",
-          "cachedResultName": "qwen/qwen3.6-35b-a3b"
+          "cachedResultName": "google/gemma-4-e2b"
         },
         "responsesApiEnabled": false,
         "options": {
@@ -95,7 +95,6 @@
         "description": "Search the live web using SearXNG for current news, facts, recent developments, and documentation. The input parameter query is a search query string.",
         "jsCode": "let searchTarget = \"\";\n\nif (typeof query === \"string\") {\n  searchTarget = query;\n} else if (typeof query === \"object\" && query !== null) {\n  searchTarget = query.query || query.input || query.searchQuery || query.q || query.some_input || query.search || query.text || query.keywords || \"\";\n  if (!searchTarget) {\n    for (const [key, val] of Object.entries(query)) {\n      if (typeof val === \"string\" && val.trim().length > 0) {\n        searchTarget = val;\n        break;\n      }\n    }\n  }\n} else if (typeof input === \"string\") {\n  searchTarget = input;\n} else if (typeof input === \"object\" && input !== null) {\n  searchTarget = input.query || input.input || input.searchQuery || input.q || input.some_input || input.search || input.text || input.keywords || \"\";\n  if (!searchTarget) {\n    for (const [key, val] of Object.entries(input)) {\n      if (typeof val === \"string\" && val.trim().length > 0) {\n        searchTarget = val;\n        break;\n      }\n    }\n  }\n}\n\nsearchTarget = (searchTarget || \"\").trim();\n\nif (!searchTarget) {\n  return \"No search query provided to SearXNG.\";\n}\n\nconst q = encodeURIComponent(searchTarget);\n\ntry {\n  const data = await this.helpers.httpRequest({\n    method: \"GET\",\n    url: `http://searxng:8080/search?q=${q}&format=json`,\n    json: true\n  });\n  const results = (data && data.results ? data.results : []).slice(0, 6).map((r, i) => `${i+1}. [${r.title}](${r.url})\\n${r.content}`).join(\"\\n\\n\");\n  return results || \"No search results found for query: \" + searchTarget;\n} catch (err) {\n  return `Error querying SearXNG: ${err.message}`;\n}\n",
         "specifyInputSchema": true,
-        "schemaType": "fromJson",
         "jsonSchemaExample": "{\n  \"query\": \"the search query string\"\n}"
       },
       "id": "slack-ai-tool-searxng",
@@ -219,7 +218,7 @@
     }
   ],
   "activeVersion": {
-    "versionId": "7036eb87-f777-4bc3-b0fa-ba5244718968",
+    "versionId": "598e78f3-981f-4b79-be7f-1e4b4e6ae8b1",
     "workflowId": "Fq6gdZ5X10eOiCQA",
     "nodes": [
       {
@@ -262,9 +261,9 @@
         "parameters": {
           "model": {
             "__rl": true,
-            "value": "qwen/qwen3.6-35b-a3b",
+            "value": "google/gemma-4-e2b",
             "mode": "list",
-            "cachedResultName": "qwen/qwen3.6-35b-a3b"
+            "cachedResultName": "google/gemma-4-e2b"
           },
           "responsesApiEnabled": false,
           "options": {
@@ -308,7 +307,6 @@
           "description": "Search the live web using SearXNG for current news, facts, recent developments, and documentation. The input parameter query is a search query string.",
           "jsCode": "let searchTarget = \"\";\n\nif (typeof query === \"string\") {\n  searchTarget = query;\n} else if (typeof query === \"object\" && query !== null) {\n  searchTarget = query.query || query.input || query.searchQuery || query.q || query.some_input || query.search || query.text || query.keywords || \"\";\n  if (!searchTarget) {\n    for (const [key, val] of Object.entries(query)) {\n      if (typeof val === \"string\" && val.trim().length > 0) {\n        searchTarget = val;\n        break;\n      }\n    }\n  }\n} else if (typeof input === \"string\") {\n  searchTarget = input;\n} else if (typeof input === \"object\" && input !== null) {\n  searchTarget = input.query || input.input || input.searchQuery || input.q || input.some_input || input.search || input.text || input.keywords || \"\";\n  if (!searchTarget) {\n    for (const [key, val] of Object.entries(input)) {\n      if (typeof val === \"string\" && val.trim().length > 0) {\n        searchTarget = val;\n        break;\n      }\n    }\n  }\n}\n\nsearchTarget = (searchTarget || \"\").trim();\n\nif (!searchTarget) {\n  return \"No search query provided to SearXNG.\";\n}\n\nconst q = encodeURIComponent(searchTarget);\n\ntry {\n  const data = await this.helpers.httpRequest({\n    method: \"GET\",\n    url: `http://searxng:8080/search?q=${q}&format=json`,\n    json: true\n  });\n  const results = (data && data.results ? data.results : []).slice(0, 6).map((r, i) => `${i+1}. [${r.title}](${r.url})\\n${r.content}`).join(\"\\n\\n\");\n  return results || \"No search results found for query: \" + searchTarget;\n} catch (err) {\n  return `Error querying SearXNG: ${err.message}`;\n}\n",
           "specifyInputSchema": true,
-          "schemaType": "fromJson",
           "jsonSchemaExample": "{\n  \"query\": \"the search query string\"\n}"
         },
         "id": "slack-ai-tool-searxng",
@@ -414,10 +412,10 @@
     },
     "nodeGroups": [],
     "authors": "Victor Jaimes-Puente",
-    "name": null,
-    "description": null,
-    "autosaved": false,
-    "createdAt": "2026-09-01T07:08:12.525Z",
-    "updatedAt": "2026-09-01T07:08:12.525Z"
+    "name": "Version 598e78f3",
+    "description": "",
+    "autosaved": true,
+    "createdAt": "2026-09-01T08:00:45.204Z",
+    "updatedAt": "2026-09-01T08:00:48.238Z"
   }
 }
