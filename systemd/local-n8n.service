@@ -1,0 +1,23 @@
+[Unit]
+Description=Local n8n Core Stack with Doppler Secrets
+Requires=docker.service local-n8n-gateway.service
+After=docker.service network-online.target local-n8n-gateway.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/silver-worker/Local-N8n
+User=silver-worker
+Group=docker
+
+# Stop existing containers on start to avoid stale states
+ExecStartPre=/usr/bin/docker compose down
+# Launch the stack using the Doppler wrapper
+ExecStart=/usr/bin/doppler run -- /usr/bin/docker compose up -d
+# Graceful shutdown on server reboot/stop
+ExecStop=/usr/bin/docker compose down
+
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

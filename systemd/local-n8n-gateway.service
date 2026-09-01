@@ -1,0 +1,26 @@
+[Unit]
+Description=Local n8n Gateway Service (Caddy & Cloudflare Tunnel) with Doppler Secrets
+Requires=docker.service
+After=docker.service network-online.target
+Before=local-n8n.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/silver-worker/Local-N8n/gateway
+User=silver-worker
+Group=docker
+
+# Ensure external gateway_net network exists before launching
+ExecStartPre=-/usr/bin/docker network create gateway_net
+# Stop existing containers on start to avoid stale states
+ExecStartPre=/usr/bin/docker compose down
+# Launch the stack using the Doppler wrapper
+ExecStart=/usr/bin/doppler run -- /usr/bin/docker compose up -d
+# Graceful shutdown on server reboot/stop
+ExecStop=/usr/bin/docker compose down
+
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target
