@@ -1,13 +1,13 @@
 {
   "id": "8irpSdMtOgDVxsSb",
   "name": "Slack",
-  "active": false,
-  "activeVersionId": null,
+  "active": true,
+  "activeVersionId": "b0a95609-f360-43d3-9215-98f01034eda3",
   "createdAt": "2026-09-01T04:31:01.277Z",
-  "updatedAt": "2026-09-01T04:40:01.237Z",
+  "updatedAt": "2026-09-01T06:43:56.622Z",
   "isArchived": false,
-  "versionId": "256d35be-f2ba-45b5-bf99-440e326906ed",
-  "triggerCount": 0,
+  "versionId": "b0a95609-f360-43d3-9215-98f01034eda3",
+  "triggerCount": 1,
   "nodes": [
     {
       "parameters": {
@@ -28,32 +28,58 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 1
-          },
-          "conditions": [
+        "rules": {
+          "values": [
             {
-              "id": "c1",
-              "leftValue": "={{ $json.body?.type }}",
-              "rightValue": "url_verification",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body?.type }}",
+                    "rightValue": "url_verification",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body?.type }}",
+                    "rightValue": "event_callback",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
               }
             }
-          ],
-          "combinator": "and"
+          ]
         },
         "options": {}
       },
-      "id": "slack-if-challenge",
-      "name": "Is URL Verification?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
+      "id": "slack-route-event",
+      "name": "Route Slack Event",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
       "position": [
         480,
         208
@@ -70,36 +96,105 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        720,
-        112
+        760,
+        100
       ]
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body || {};\nconst event = body.event || {};\n\n// Ignore bot messages to avoid echo loops\nif (event.bot_id || event.subtype === \"bot_message\") {\n  return [];\n}\n\nreturn [{\n  json: {\n    eventType: event.type || \"message\",\n    channel: event.channel || \"\",\n    user: event.user || \"\",\n    text: event.text || \"\",\n    ts: event.ts || \"\",\n    thread_ts: event.thread_ts || event.ts || \"\",\n    rawEvent: event,\n    receivedAt: new Date().toISOString()\n  }\n}];"
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "guard-no-bot-id",
+              "leftValue": "={{ $json.body?.event?.bot_id }}",
+              "operator": {
+                "type": "string",
+                "operation": "empty"
+              }
+            },
+            {
+              "id": "guard-no-bot-subtype",
+              "leftValue": "={{ $json.body?.event?.subtype }}",
+              "rightValue": "bot_message",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
       },
-      "id": "slack-parse-inbound",
-      "name": "Parse Inbound Message",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "slack-filter-bots",
+      "name": "Filter Out Bots",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
       "position": [
-        720,
-        304
+        760,
+        280
       ]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ status: \"received\", event: $json }) }}",
+        "responseBody": "={{ JSON.stringify({ status: \"ok\" }) }}",
         "options": {}
       },
-      "id": "slack-respond-ok",
+      "id": "slack-ack-immediate",
       "name": "Acknowledge Event",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        960,
-        304
+        980,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nconst event = body.event || body;\n\nreturn [{\n  json: {\n    event: {\n      type: event.type || \"message\",\n      channel: event.channel || \"\",\n      user: event.user || \"\",\n      text: event.text || \"\",\n      ts: event.ts || \"\",\n      thread_ts: event.thread_ts || event.ts || \"\"\n    },\n    rawEvent: event,\n    receivedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "slack-prepare-subwf-payload",
+      "name": "Prepare Sub-Workflow Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "Fq6gdZ5X10eOiCQA",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "event": "={{ $json.event }}"
+          }
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "id": "slack-call-ai-agent",
+      "name": "Call slack-ai-agent",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        260
       ]
     },
     {
@@ -198,14 +293,14 @@
       "main": [
         [
           {
-            "node": "Is URL Verification?",
+            "node": "Route Slack Event",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Is URL Verification?": {
+    "Route Slack Event": {
       "main": [
         [
           {
@@ -216,18 +311,40 @@
         ],
         [
           {
-            "node": "Parse Inbound Message",
+            "node": "Filter Out Bots",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Parse Inbound Message": {
+    "Filter Out Bots": {
       "main": [
         [
           {
             "node": "Acknowledge Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge Event": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sub-Workflow Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Sub-Workflow Payload": {
+      "main": [
+        [
+          {
+            "node": "Call slack-ai-agent",
             "type": "main",
             "index": 0
           }
@@ -299,5 +416,403 @@
       "updatedAt": "2026-09-01T04:31:01.277Z"
     }
   ],
-  "activeVersion": null
+  "activeVersion": {
+    "versionId": "b0a95609-f360-43d3-9215-98f01034eda3",
+    "workflowId": "8irpSdMtOgDVxsSb",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "slack-events",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "slack-webhook-01",
+        "name": "Slack Events Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          240,
+          208
+        ],
+        "webhookId": "slack-events-webhook"
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.body?.type }}",
+                      "rightValue": "url_verification",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.body?.type }}",
+                      "rightValue": "event_callback",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "slack-route-event",
+        "name": "Route Slack Event",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.2,
+        "position": [
+          480,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ JSON.stringify({ challenge: $json.body.challenge }) }}",
+          "options": {}
+        },
+        "id": "slack-respond-challenge",
+        "name": "Respond Challenge",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          760,
+          100
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "guard-no-bot-id",
+                "leftValue": "={{ $json.body?.event?.bot_id }}",
+                "operator": {
+                  "type": "string",
+                  "operation": "empty"
+                }
+              },
+              {
+                "id": "guard-no-bot-subtype",
+                "leftValue": "={{ $json.body?.event?.subtype }}",
+                "rightValue": "bot_message",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEquals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "slack-filter-bots",
+        "name": "Filter Out Bots",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          760,
+          280
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ JSON.stringify({ status: \"ok\" }) }}",
+          "options": {}
+        },
+        "id": "slack-ack-immediate",
+        "name": "Acknowledge Event",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          980,
+          260
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const body = $input.first().json.body || {};\nconst event = body.event || body;\n\nreturn [{\n  json: {\n    event: {\n      type: event.type || \"message\",\n      channel: event.channel || \"\",\n      user: event.user || \"\",\n      text: event.text || \"\",\n      ts: event.ts || \"\",\n      thread_ts: event.thread_ts || event.ts || \"\"\n    },\n    rawEvent: event,\n    receivedAt: new Date().toISOString()\n  }\n}];"
+        },
+        "id": "slack-prepare-subwf-payload",
+        "name": "Prepare Sub-Workflow Payload",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1200,
+          260
+        ]
+      },
+      {
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "value": "Fq6gdZ5X10eOiCQA",
+            "mode": "id"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "event": "={{ $json.event }}"
+            }
+          },
+          "mode": "once",
+          "options": {
+            "waitForSubWorkflow": false
+          }
+        },
+        "id": "slack-call-ai-agent",
+        "name": "Call slack-ai-agent",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          1440,
+          260
+        ]
+      },
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "channel"
+              },
+              {
+                "name": "text"
+              },
+              {
+                "name": "thread_ts"
+              }
+            ]
+          }
+        },
+        "id": "slack-trig-subwf",
+        "name": "When Executed by Another Workflow",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          240,
+          528
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "slack-trig-manual",
+        "name": "When clicking \"Test workflow\"",
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          240,
+          704
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const inputData = $input.first() ? $input.first().json : {};\n\nconst channel = inputData.channel || inputData.channelId || \"general\";\nconst text = inputData.text || inputData.message || \"Hello from n8n Slack Integration!\";\nconst thread_ts = inputData.thread_ts || inputData.threadTs || \"\";\n\nreturn [{\n  json: {\n    channel,\n    text,\n    thread_ts,\n    timestamp: new Date().toISOString()\n  }\n}];"
+        },
+        "id": "slack-prep-outbound",
+        "name": "Prepare Outbound Message",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          512,
+          608
+        ]
+      },
+      {
+        "parameters": {
+          "authentication": "oAuth2",
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "=all-tiranotech",
+            "mode": "name"
+          },
+          "text": "={{ $json.text }}",
+          "otherOptions": {}
+        },
+        "id": "slack-post-message",
+        "name": "Slack: Post Message",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.2,
+        "position": [
+          768,
+          608
+        ],
+        "webhookId": "5533119a-8f91-461a-bcd5-8b145da591b4",
+        "credentials": {
+          "slackOAuth2Api": {
+            "id": "aSF0sVdzDzhmMBK3",
+            "name": "TiranoTech"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const slackResult = $input.first() ? $input.first().json : {};\nreturn [{\n  json: {\n    success: true,\n    channel: slackResult.channel || $(\"Prepare Outbound Message\").first().json.channel,\n    ts: slackResult.ts || \"\",\n    message: slackResult.message || $(\"Prepare Outbound Message\").first().json.text,\n    deliveredAt: new Date().toISOString()\n  }\n}];"
+        },
+        "id": "slack-format-result",
+        "name": "Format Send Result",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1024,
+          608
+        ]
+      }
+    ],
+    "connections": {
+      "Slack Events Webhook": {
+        "main": [
+          [
+            {
+              "node": "Route Slack Event",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Route Slack Event": {
+        "main": [
+          [
+            {
+              "node": "Respond Challenge",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Filter Out Bots",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Filter Out Bots": {
+        "main": [
+          [
+            {
+              "node": "Acknowledge Event",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Acknowledge Event": {
+        "main": [
+          [
+            {
+              "node": "Prepare Sub-Workflow Payload",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Sub-Workflow Payload": {
+        "main": [
+          [
+            {
+              "node": "Call slack-ai-agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "When Executed by Another Workflow": {
+        "main": [
+          [
+            {
+              "node": "Prepare Outbound Message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "When clicking \"Test workflow\"": {
+        "main": [
+          [
+            {
+              "node": "Prepare Outbound Message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Outbound Message": {
+        "main": [
+          [
+            {
+              "node": "Slack: Post Message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Slack: Post Message": {
+        "main": [
+          [
+            {
+              "node": "Format Send Result",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Victor Jaimes-Puente",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-09-01T06:43:45.542Z",
+    "updatedAt": "2026-09-01T06:43:45.542Z"
+  }
 }

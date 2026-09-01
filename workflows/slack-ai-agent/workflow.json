@@ -1,0 +1,436 @@
+{
+  "id": "Fq6gdZ5X10eOiCQA",
+  "name": "slack-ai-agent",
+  "active": true,
+  "activeVersionId": "78e78cc9-8bef-413e-986c-d0014886ef8c",
+  "createdAt": "2026-09-01T06:14:40.043Z",
+  "updatedAt": "2026-09-01T06:43:37.302Z",
+  "isArchived": false,
+  "versionId": "78e78cc9-8bef-413e-986c-d0014886ef8c",
+  "triggerCount": 0,
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "event"
+            }
+          ]
+        }
+      },
+      "id": "slack-ai-trig",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $(\"When Executed by Another Workflow\").item.json.event?.text || $json.event?.text || $json.text || \"Hello\" }}",
+        "options": {
+          "systemMessage": "You are a helpful AI assistant running locally on LM Studio (Hulk). You have access to a SearXNG web search tool (searxng_web_search). When asked about real-time data, current facts, weather, water levels, or recent news, ALWAYS call the searxng_web_search tool to fetch live information before answering. Format your response cleanly using Slack markdown formatting (e.g. *bold*, _italic_, bullet points, links formatted as <URL|text>)."
+        }
+      },
+      "id": "slack-ai-agent-node",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        580,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "google/gemma-4-e4b",
+          "mode": "list",
+          "cachedResultName": "google/gemma-4-e4b"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "temperature": 0.7,
+          "timeout": 360000,
+          "maxRetries": 2
+        }
+      },
+      "id": "slack-ai-model",
+      "name": "Hulk LM Studio Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        420,
+        460
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "hvK9eAePdrKHSgMD",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $(\"When Executed by Another Workflow\").item.json.event?.thread_ts || $(\"When Executed by Another Workflow\").item.json.event?.ts || $json.event?.thread_ts || $json.event?.ts || \"slack-thread-default\" }}",
+        "contextWindowLength": 5
+      },
+      "id": "slack-ai-memory",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        600,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "name": "searxng_web_search",
+        "description": "Search the live web using SearXNG for current news, real-time facts, water levels, weather, recent developments, or documentation. Input is a search query string.",
+        "jsCode": "let searchTarget = \"\";\nif (typeof query === \"string\") {\n  searchTarget = query;\n} else if (typeof query === \"object\" && query !== null) {\n  searchTarget = query.query || query.input || query.searchQuery || query.q || \"\";\n} else if (typeof input === \"string\") {\n  searchTarget = input;\n} else if (typeof input === \"object\" && input !== null) {\n  searchTarget = input.query || input.input || input.searchQuery || input.q || \"\";\n}\n\nif (!searchTarget) {\n  searchTarget = \"canyon lake texas water level 78133\";\n}\n\nconst q = encodeURIComponent(searchTarget);\n\ntry {\n  const data = await this.helpers.httpRequest({\n    method: \"GET\",\n    url: `http://searxng:8080/search?q=${q}&format=json`,\n    json: true\n  });\n  const results = (data && data.results ? data.results : []).slice(0, 5).map((r, i) => `${i+1}. [${r.title}](${r.url})\\n${r.content}`).join(\"\\n\\n\");\n  return results || \"No results found for query: \" + searchTarget;\n} catch (err) {\n  return `Error querying SearXNG: ${err.message}`;\n}\n",
+        "specifyInputSchema": true
+      },
+      "id": "slack-ai-tool-searxng",
+      "name": "Tool-SearXNG-Search",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [
+        780,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $(\"When Executed by Another Workflow\").item.json.event?.channel || $json.event?.channel }}",
+          "mode": "id"
+        },
+        "text": "={{ $json.output || $json.text }}",
+        "otherOptions": {
+          "thread_ts": {
+            "replyValues": {
+              "thread_ts": "={{ $(\"When Executed by Another Workflow\").item.json.event?.thread_ts || $(\"When Executed by Another Workflow\").item.json.event?.ts || $json.event?.thread_ts || $json.event?.ts }}"
+            }
+          }
+        }
+      },
+      "id": "slack-ai-post-reply",
+      "name": "Slack: Post AI Reply",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        920,
+        240
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "aSF0sVdzDzhmMBK3",
+          "name": "TiranoTech"
+        }
+      },
+      "webhookId": "3653a40a-8c6c-49fe-a699-dff36216751c"
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hulk LM Studio Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool-SearXNG-Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Slack: Post AI Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 600,
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "event": {
+            "type": "app_mention",
+            "user": "U12345678",
+            "text": "@TiranoTech-n8n What is the latest status on project deployment?",
+            "ts": "1710000000.000100",
+            "channel": "C0A01JLFNCB",
+            "event_ts": "1710000000.000100"
+          }
+        }
+      }
+    ]
+  },
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "Fq6gdZ5X10eOiCQA",
+      "projectId": "zeGW8E3sHgkaR4Sr",
+      "createdAt": "2026-09-01T06:14:40.043Z",
+      "updatedAt": "2026-09-01T06:14:40.043Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "78e78cc9-8bef-413e-986c-d0014886ef8c",
+    "workflowId": "Fq6gdZ5X10eOiCQA",
+    "nodes": [
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "event"
+              }
+            ]
+          }
+        },
+        "id": "slack-ai-trig",
+        "name": "When Executed by Another Workflow",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          240,
+          240
+        ]
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $(\"When Executed by Another Workflow\").item.json.event?.text || $json.event?.text || $json.text || \"Hello\" }}",
+          "options": {
+            "systemMessage": "You are a helpful AI assistant running locally on LM Studio (Hulk). You have access to a SearXNG web search tool (searxng_web_search). When asked about real-time data, current facts, weather, water levels, or recent news, ALWAYS call the searxng_web_search tool to fetch live information before answering. Format your response cleanly using Slack markdown formatting (e.g. *bold*, _italic_, bullet points, links formatted as <URL|text>)."
+          }
+        },
+        "id": "slack-ai-agent-node",
+        "name": "AI Agent",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          580,
+          240
+        ]
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "value": "google/gemma-4-e4b",
+            "mode": "list",
+            "cachedResultName": "google/gemma-4-e4b"
+          },
+          "responsesApiEnabled": false,
+          "options": {
+            "temperature": 0.7,
+            "timeout": 360000,
+            "maxRetries": 2
+          }
+        },
+        "id": "slack-ai-model",
+        "name": "Hulk LM Studio Model",
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.3,
+        "position": [
+          420,
+          460
+        ],
+        "credentials": {
+          "openAiApi": {
+            "id": "hvK9eAePdrKHSgMD",
+            "name": "OpenAI account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "sessionIdType": "customKey",
+          "sessionKey": "={{ $(\"When Executed by Another Workflow\").item.json.event?.thread_ts || $(\"When Executed by Another Workflow\").item.json.event?.ts || $json.event?.thread_ts || $json.event?.ts || \"slack-thread-default\" }}",
+          "contextWindowLength": 5
+        },
+        "id": "slack-ai-memory",
+        "name": "Window Buffer Memory",
+        "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+        "typeVersion": 1.3,
+        "position": [
+          600,
+          460
+        ]
+      },
+      {
+        "parameters": {
+          "name": "searxng_web_search",
+          "description": "Search the live web using SearXNG for current news, real-time facts, water levels, weather, recent developments, or documentation. Input is a search query string.",
+          "jsCode": "let searchTarget = \"\";\nif (typeof query === \"string\") {\n  searchTarget = query;\n} else if (typeof query === \"object\" && query !== null) {\n  searchTarget = query.query || query.input || query.searchQuery || query.q || \"\";\n} else if (typeof input === \"string\") {\n  searchTarget = input;\n} else if (typeof input === \"object\" && input !== null) {\n  searchTarget = input.query || input.input || input.searchQuery || input.q || \"\";\n}\n\nif (!searchTarget) {\n  searchTarget = \"canyon lake texas water level 78133\";\n}\n\nconst q = encodeURIComponent(searchTarget);\n\ntry {\n  const data = await this.helpers.httpRequest({\n    method: \"GET\",\n    url: `http://searxng:8080/search?q=${q}&format=json`,\n    json: true\n  });\n  const results = (data && data.results ? data.results : []).slice(0, 5).map((r, i) => `${i+1}. [${r.title}](${r.url})\\n${r.content}`).join(\"\\n\\n\");\n  return results || \"No results found for query: \" + searchTarget;\n} catch (err) {\n  return `Error querying SearXNG: ${err.message}`;\n}\n",
+          "specifyInputSchema": true
+        },
+        "id": "slack-ai-tool-searxng",
+        "name": "Tool-SearXNG-Search",
+        "type": "@n8n/n8n-nodes-langchain.toolCode",
+        "typeVersion": 1.1,
+        "position": [
+          780,
+          460
+        ]
+      },
+      {
+        "parameters": {
+          "authentication": "oAuth2",
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "={{ $(\"When Executed by Another Workflow\").item.json.event?.channel || $json.event?.channel }}",
+            "mode": "id"
+          },
+          "text": "={{ $json.output || $json.text }}",
+          "otherOptions": {
+            "thread_ts": {
+              "replyValues": {
+                "thread_ts": "={{ $(\"When Executed by Another Workflow\").item.json.event?.thread_ts || $(\"When Executed by Another Workflow\").item.json.event?.ts || $json.event?.thread_ts || $json.event?.ts }}"
+              }
+            }
+          }
+        },
+        "id": "slack-ai-post-reply",
+        "name": "Slack: Post AI Reply",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.2,
+        "position": [
+          920,
+          240
+        ],
+        "credentials": {
+          "slackOAuth2Api": {
+            "id": "aSF0sVdzDzhmMBK3",
+            "name": "TiranoTech"
+          }
+        },
+        "webhookId": "3653a40a-8c6c-49fe-a699-dff36216751c"
+      }
+    ],
+    "connections": {
+      "When Executed by Another Workflow": {
+        "main": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hulk LM Studio Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Window Buffer Memory": {
+        "ai_memory": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "ai_memory",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool-SearXNG-Search": {
+        "ai_tool": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "AI Agent": {
+        "main": [
+          [
+            {
+              "node": "Slack: Post AI Reply",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Victor Jaimes-Puente",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-09-01T06:43:37.303Z",
+    "updatedAt": "2026-09-01T06:43:37.303Z"
+  }
+}
