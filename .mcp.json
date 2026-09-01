@@ -1,0 +1,30 @@
+{
+  "servers": {
+    "meshnet-n8n": {
+      "command": "node",
+      "args": [
+        "/Users/victor/Dev/Local-N8n/n8n-mcp/dist/index.js"
+      ],
+      "env": {
+        "N8N_API_URL": "https://n8n.local-n8n.com",
+        "N8N_HOST": "https://n8n.local-n8n.com",
+        "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NGQ4MTcxOC0xZjVkLTQxNTQtYWMxOC0xMzc2NTk1MzVmZGIiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMmIzZDdjMDMtODZlNi00MGYwLTlhOWMtZjZiYjM2NGI4NzhlIiwiaWF0IjoxNzg4MjE1NzUxfQ.aT_eCBS-0dPfsPLO97o1kJIhXVTIHVpn418gGIx_9LU",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      }
+    }
+  },
+  "mcpServers": {
+    "meshnet-n8n": {
+      "command": "node",
+      "args": [
+        "/Users/victor/Dev/Local-N8n/n8n-mcp/dist/index.js"
+      ],
+      "env": {
+        "N8N_API_URL": "https://n8n.local-n8n.com",
+        "N8N_HOST": "https://n8n.local-n8n.com",
+        "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NGQ4MTcxOC0xZjVkLTQxNTQtYWMxOC0xMzc2NTk1MzVmZGIiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMmIzZDdjMDMtODZlNi00MGYwLTlhOWMtZjZiYjM2NGI4NzhlIiwiaWF0IjoxNzg4MjE1NzUxfQ.aT_eCBS-0dPfsPLO97o1kJIhXVTIHVpn418gGIx_9LU",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      }
+    }
+  }
+}
