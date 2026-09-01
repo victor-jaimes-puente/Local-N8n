@@ -36,9 +36,9 @@
 | `NODE_ENV` | Node.js runtime environment flag | `compose.yaml` (x-shared) | `production` |
 | `DATA_FOLDER` | Legacy/local host directory mounted for file exchange | `.env`, `compose.yaml` | `./caddy/n8n-docker-caddy` |
 | `SSL_EMAIL` | Contact email for automated ACME / Let's Encrypt TLS | `.env` | `example@example.com` |
-| `N8N_MCP_API_KEY` | n8n REST API key for Antigravity MCP integration | `mcp_config.json`, Doppler | *(High-entropy secret token)* |
 | `SANDBOX_API_KEY` | Secret token authenticating n8n to local code sandbox | `sandbox/` stack, Doppler | *(High-entropy secret token)* |
-| `SANDBOX_API_PORT` | Port for self-hosted code sandbox API service | `sandbox/` stack | `3200` |
+| `SANDBOX_API_LISTEN_ADDR` | Public HTTP listen address for sandbox API container | `sandbox/` stack | `:3200` |
+| `SANDBOX_API_PORT` | Host exposed port for code sandbox service | `sandbox/` stack | `3200` |
 
 ---
 

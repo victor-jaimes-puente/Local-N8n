@@ -6,22 +6,33 @@
 
 ## 1. Core Operational Commands
 
-All commands should be executed from within the project directory on the **Ubuntu host server** (or within a WSL 2 Ubuntu shell for local development).
+All commands should be executed on the **Ubuntu host server** (`silver-worker` on Dell Precision 5480).
+
+### Remote Host SSH Access
+From the developer workstation:
+```bash
+# Direct SSH over private NordVPN Meshnet tunnel:
+ssh -i ~/.ssh/id_ed25519 silver-worker@100.116.224.88
+
+# Or using the local shell alias:
+silverworker
+```
 
 ### Stack Deployment & Lifecycle (Doppler Mode)
 ```bash
-# 1. Ensure external gateway network exists
+# 1. Navigate to project root
+cd /home/silver-worker/Local-N8n
+
+# 2. Ensure external gateway network exists
 docker network create gateway_net || true
 
-# 2. Start standalone Caddy reverse proxy
-cd gateway
-docker compose up -d
-cd ..
+# 3. Start standalone Caddy reverse proxy
+cd gateway && docker compose up -d && cd ..
 
-# 3. Configure Doppler project scope (first time or when switching environments)
+# 4. Configure Doppler project scope (first time or when switching environments)
 doppler setup --project silver-worker --config prd
 
-# 4. Start main n8n stack with runtime secret injection
+# 5. Start main n8n stack with runtime secret injection
 doppler run -- docker compose up -d
 
 # 5. Check container statuses and healthchecks

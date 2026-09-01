@@ -34,6 +34,9 @@ Local-N8n/
 │   └── n8n-docker-caddy/
 │       └── caddy_config/
 │           └── Caddyfile                    # Alternate Caddy configuration (n8n.local.test)
+├── sandbox/                                 # Isolated n8n Code Sandbox service
+│   ├── docker-compose.yaml                  # Sandbox API & Runner compose stack
+│   └── README.md                            # Sandbox architecture & systemd service guide
 ├── workflows/                               # Exported n8n workflow JSONs & documentation
 │   ├── README.md                            # Workflows directory index
 │   ├── meshnet-health-check/                # Meshnet HTTP ingress health probe
@@ -52,7 +55,7 @@ Local-N8n/
 │   ├── roadmmap-1.md                        # 4-Phase Meshnet Infrastructure Roadmap
 │   ├── n8n-mcp-antigrvity-roadmap.md        # 5-Phase Antigravity MCP integration plan
 │   ├── Deploying Self-Hosted n8n Code Sandbox/
-│   │   └── plan.md                          # Implementation plan for isolated code sandbox (sysbox)
+│   │   └── plan.md                          # Implementation plan for isolated code sandbox
 │   └── repo-map/                            # Agent Repository Map (This directory)
 │       ├── README.md                        # Main navigation & summary index
 │       ├── ARCHITECTURE.md                  # Network topology, services & scaling specs
@@ -66,18 +69,39 @@ Local-N8n/
 
 ---
 
-## 3. Quick Reference for Agents
+## 3. Remote Host & Agent Connection Model
+
+### Host Specifications
+- **Server Identity**: `silver-worker` (Dell Precision 5480)
+- **Kernel / OS**: Ubuntu Server (Linux `7.0.0-30-generic` x86_64)
+- **Meshnet Private IP**: `100.116.224.88`
+- **Application Root**: `/home/silver-worker/Local-N8n`
+- **Sandbox Root**: `/home/silver-worker/Local-N8n/sandbox`
+
+### Connection Method
+- **SSH Transport**: Authenticated via Ed25519 public key cryptography (`ssh -i ~/.ssh/id_ed25519 silver-worker@100.116.224.88` or shell alias `silverworker`).
+- **Zero-Trust Network**: Remote shell access is routed exclusively over the private NordVPN Meshnet tunnel, inaccessible from public IP ranges or unauthenticated local Wi-Fi.
+
+### Agent Safeguards & Guardrails
+1. **Zero-Disk Secret Policy**: Agents must never commit, output, or write plaintext tokens to `.env` files. Secrets must strictly be managed through Doppler (`silver-worker/prd`).
+2. **Execution Quarantining**: Untrusted AI-generated code from the Assistant or Agents is restricted to the `sandbox-api` / `sandbox-runner` containers on `gateway_net` and never executed on the host OS or production database containers.
+3. **Safe Workflow Staging**: All newly created workflows must be scaffolded with `active: false` until validation succeeds.
+4. **Non-Interactive Deployments**: Container operations must run with `doppler run -- docker compose up -d` non-interactively. Commands requiring interactive `sudo` passwords must be clearly documented for manual execution.
+
+---
+
+## 4. Quick Reference for Agents
 
 | Task / Domain | Key Files to Read / Edit |
 | :--- | :--- |
 | **Main n8n Stack** | [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml), Doppler project `silver-worker/prd` |
-| **Host Boot Persistence** | `/etc/systemd/system/local-n8n.service`, [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) |
+| **Host Boot Persistence** | `/etc/systemd/system/local-n8n.service`, `/etc/systemd/system/local-n8n-sandbox.service` |
 | **Database Initialization** | [`init-data.sh`](file:///Users/victor/Dev/Local-N8n/init-data.sh), [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml) |
 | **Reverse Proxy & Ingress** | [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml), [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile) |
 | **Environment & Secrets** | [`.env-sample`](file:///Users/victor/Dev/Local-N8n/.env-sample), [`ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md) |
-| **Operations & Troubleshooting** | [`README.md`](file:///Users/victor/Dev/Local-N8n/README.md), [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) |
+| **Code Sandbox Stack** | [`sandbox/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/sandbox/docker-compose.yaml), [`sandbox/README.md`](file:///Users/victor/Dev/Local-N8n/sandbox/README.md) |
+| **Operations & Runbooks** | [`README.md`](file:///Users/victor/Dev/Local-N8n/README.md), [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) |
 | **Exported Workflows** | [`workflows/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/README.md), [`workflows/meshnet-health-check/`](file:///Users/victor/Dev/Local-N8n/workflows/meshnet-health-check/), [`workflows/ai-testing/`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/) |
-| **Code Sandbox Integration** | [`planning/Deploying Self-Hosted n8n Code Sandbox/plan.md`](file:///Users/victor/Dev/Local-N8n/planning/Deploying%20Self-Hosted%20n8n%20Code%20Sandbox/plan.md) |
 | **MCP Server Config** | [`mcp_config.json`](file:///Users/victor/Dev/Local-N8n/mcp_config.json), [`.agents/mcp_config.json`](file:///Users/victor/Dev/Local-N8n/.agents/mcp_config.json) |
 | **Agent Rules & Guardrails** | [`AGENTS.md`](file:///Users/victor/Dev/Local-N8n/AGENTS.md), [`.agents/rules/n8n-mcp.md`](file:///Users/victor/Dev/Local-N8n/.agents/rules/n8n-mcp.md) |
 | **Roadmap & Expansion** | [`planning/roadmmap-1.md`](file:///Users/victor/Dev/Local-N8n/planning/roadmmap-1.md), [`planning/n8n-mcp-antigrvity-roadmap.md`](file:///Users/victor/Dev/Local-N8n/planning/n8n-mcp-antigrvity-roadmap.md) |
@@ -85,9 +109,10 @@ Local-N8n/
 
 ---
 
-## 4. Map Navigation
+## 5. Map Navigation
 
 - For **Topology & Architecture**: See [`ARCHITECTURE.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ARCHITECTURE.md).
 - For **File Inventory & Purpose**: See [`FILE_MANIFEST.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/FILE_MANIFEST.md).
 - For **Environment Variables & Secrets**: See [`ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md).
 - For **Operational Workflows & Runbooks**: See [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md).
+

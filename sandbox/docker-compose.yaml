@@ -1,0 +1,103 @@
+# Official Production Docker Compose for n8n Sandbox Service on Linux (sysbox-runc)
+services:
+  tls-init:
+    image: n8nio/n8n-sandbox-service-api:latest
+    user: "0:0"
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        bootstrap-mtls.sh
+        --out-dir /tls
+        --api-san n8n-sandbox-api-local
+        --control-san-prefix n8n-sandbox-runner-local
+        && chown -R sandbox-api:sandbox-api /tls/api
+    environment:
+      NUM_RUNNERS: ${NUM_RUNNERS:-1}
+    volumes:
+      - ./.tls:/tls
+    networks:
+      - sandbox-service
+
+  api:
+    image: n8nio/n8n-sandbox-service-api:latest
+    restart: unless-stopped
+    depends_on:
+      tls-init:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:3200:8080"
+      - "100.116.224.88:3200:8080"
+    volumes:
+      - ./.tls/api:/tls:ro
+      - api-data:/var/lib/n8n-sandbox-api
+    environment:
+      SANDBOX_API_KEYS: ${SANDBOX_API_KEY}
+      SANDBOX_API_LISTEN_ADDR: ":3200"
+      SANDBOX_API_RUNNER_REGISTRATION_TOKEN: ${SANDBOX_RUNNER_REGISTRATION_TOKEN:-sandbox-token}
+      SANDBOX_API_RUNNER_API_KEY: ${SANDBOX_RUNNER_API_KEY:-sandbox-token}
+      SANDBOX_API_GRPC_TLS_CERT_FILE: /tls/grpc-server.crt
+      SANDBOX_API_GRPC_TLS_KEY_FILE: /tls/grpc-server.key
+      SANDBOX_API_GRPC_TLS_CLIENT_CA_FILE: /tls/ca.crt
+      SANDBOX_API_RUNNER_CONTROL_GRPC_TLS_CA_FILE: /tls/ca.crt
+      SANDBOX_API_RUNNER_CONTROL_GRPC_TLS_CERT_FILE: /tls/control-grpc-api-client.crt
+      SANDBOX_API_RUNNER_CONTROL_GRPC_TLS_KEY_FILE: /tls/control-grpc-api-client.key
+      SANDBOX_API_RUNNER_CONTROL_GRPC_TLS_SERVER_NAME: n8n-sandbox-runner-local-1
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:3200/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    networks:
+      sandbox-service:
+        aliases:
+          - n8n-sandbox-api
+      gateway_net:
+        aliases:
+          - sandbox-api
+
+  runner:
+    image: n8nio/n8n-sandbox-service-runner-dind:latest
+    runtime: sysbox-runc
+    restart: unless-stopped
+    depends_on:
+      tls-init:
+        condition: service_completed_successfully
+      api:
+        condition: service_healthy
+    volumes:
+      - ./.tls/runner:/tls:ro
+    environment:
+      SANDBOX_RUNNER_API_KEYS: ${SANDBOX_RUNNER_API_KEY:-sandbox-token}
+      SANDBOX_RUNNER_REGISTRATION_TOKEN: ${SANDBOX_RUNNER_REGISTRATION_TOKEN:-sandbox-token}
+      SANDBOX_RUNNER_DOCKER_SANDBOX_IMAGE: n8nio/n8n-sandbox-service-sandbox:latest
+      SANDBOX_RUNNER_API_GRPC_ADDR: n8n-sandbox-api:9090
+      SANDBOX_RUNNER_HTTP_BASE_URL: http://n8n-sandbox-runner-1:8080
+      SANDBOX_RUNNER_CONTROL_GRPC_LISTEN_ADDR: ":9091"
+      SANDBOX_RUNNER_CONTROL_GRPC_ADVERTISE_ADDR: n8n-sandbox-runner-1:9091
+      SANDBOX_RUNNER_REGISTRATION_GRPC_CA_FILE: /tls/ca.crt
+      SANDBOX_RUNNER_REGISTRATION_GRPC_CERT_FILE: /tls/grpc-client.crt
+      SANDBOX_RUNNER_REGISTRATION_GRPC_KEY_FILE: /tls/grpc-client.key
+      SANDBOX_RUNNER_REGISTRATION_GRPC_SERVER_NAME: n8n-sandbox-api-local
+      SANDBOX_RUNNER_CONTROL_GRPC_TLS_CERT_FILE: /tls/control-grpc-server.crt
+      SANDBOX_RUNNER_CONTROL_GRPC_TLS_KEY_FILE: /tls/control-grpc-server.key
+      SANDBOX_RUNNER_CONTROL_GRPC_TLS_CLIENT_CA_FILE: /tls/ca.crt
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 20s
+    networks:
+      sandbox-service:
+        aliases:
+          - n8n-sandbox-runner-1
+
+networks:
+  sandbox-service:
+    driver: bridge
+  gateway_net:
+    external: true
+
+volumes:
+  api-data:

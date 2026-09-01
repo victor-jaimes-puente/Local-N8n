@@ -192,6 +192,47 @@ graph TD
 1. **Antigravity Model Context Protocol (MCP)**:
    - Antigravity pair programming agents interface directly with the production n8n instance via the `meshnet-n8n` MCP server.
    - All interactions run through `n8n-mcp` over the encrypted Meshnet gateway (`https://n8n.local-n8n.com`), allowing agents to inspect node schemas (`get_node_schema`), validate active executions (`execute_workflow`), and manage workflows programmatically without exposing raw database credentials.
-2. **Self-Hosted Isolated Code Sandbox (`sysbox-runc`)**:
-   - For code-execution nodes and AI Assistant tools, n8n can dispatch JavaScript/Python code execution to an isolated companion service (`n8n-sandbox-service`).
-   - Utilizes `sysbox-runc` for unprivileged container isolation, guaranteeing safe execution without risk to host filesystem or production Docker daemon.
+2. **Self-Hosted Isolated Code Sandbox**:
+   - For code-execution nodes and AI Assistant tools, n8n dispatches JavaScript/Python code execution to the companion service (`n8n-sandbox-service`) in `/home/silver-worker/Local-N8n/sandbox`.
+   - Listens on `http://sandbox-api:3200` attached to `gateway_net` and bound on the host to `127.0.0.1:3200` and `100.116.224.88:3200`.
+   - Guaranteed isolated from host root and database volumes via internal `sandbox_service` Docker bridge.
+
+---
+
+## 7. Agent Remote Connection Model & Operational Safeguards
+
+### A. Remote Host Infrastructure
+- **Server Identity**: `silver-worker` (Dell Precision 5480)
+- **Operating System**: Ubuntu Server (Linux `7.0.0-30-generic` x86_64)
+- **Meshnet Private IP**: `100.116.224.88`
+- **Application Workdir**: `/home/silver-worker/Local-N8n`
+- **Sandbox Workdir**: `/home/silver-worker/Local-N8n/sandbox`
+
+### B. Agent Connection Architecture
+```mermaid
+sequenceDiagram
+    participant DevClient as Antigravity Agent (Dev Client)
+    participant Meshnet as NordVPN Meshnet (100.116.224.88)
+    participant HostOS as Ubuntu Host (silver-worker)
+    participant Doppler as Doppler Secret Store (silver-worker/prd)
+    participant Docker as Docker Daemon / gateway_net
+
+    DevClient->>Meshnet: SSH Session (Ed25519 Key Auth)
+    Meshnet->>HostOS: Authenticated Remote Shell (User: silver-worker)
+    HostOS->>Doppler: doppler run -- (Inject memory-only credentials)
+    HostOS->>Docker: docker compose up -d (Non-interactive deploy)
+    Docker->>Docker: Containers join gateway_net & default subnets
+```
+
+### C. Operational Guardrails & Safeguards
+1. **Zero-Disk Secret Guarantee**:
+   - Plaintext credentials and tokens must never be written to `.env` or disk files.
+   - The directory `/home/silver-worker/Local-N8n` is bound to Doppler service tokens scoped to `silver-worker/prd`.
+2. **Dual-Stack Host Persistence**:
+   - `/etc/systemd/system/local-n8n.service`: Manages Postgres, Redis, n8n, and n8n-worker.
+   - `/etc/systemd/system/local-n8n-sandbox.service`: Manages sandbox-api, sandbox-runner, and registry with `After=local-n8n.service`.
+3. **Execution Quarantining**:
+   - AI-generated code execution is strictly routed to `http://sandbox-api:3200` and executed inside isolated runner containers. Untrusted code cannot touch host mounts or Postgres data volumes.
+4. **Staging Safety Rule**:
+   - Any workflow generated via agent API/MCP must retain `active: false` until validation checks succeed.
+
