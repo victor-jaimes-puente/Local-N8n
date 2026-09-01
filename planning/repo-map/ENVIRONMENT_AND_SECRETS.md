@@ -39,6 +39,7 @@
 | `SANDBOX_API_KEY` | Secret token authenticating n8n to local code sandbox | `sandbox/` stack, Doppler | *(High-entropy secret token)* |
 | `SANDBOX_API_LISTEN_ADDR` | Public HTTP listen address for sandbox API container | `sandbox/` stack | `:3200` |
 | `SANDBOX_API_PORT` | Host exposed port for code sandbox service | `sandbox/` stack | `3200` |
+| `SEARXNG_SECRET_KEY` | High-entropy secret key securing SearXNG instance | `searxng/` stack, Doppler | *(High-entropy secret token)* |
 
 ---
 

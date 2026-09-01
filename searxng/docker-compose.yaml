@@ -1,0 +1,22 @@
+services:
+  searxng:
+    container_name: local-n8n-searxng
+    image: searxng/searxng:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8088:8080"
+      - "100.116.224.88:8088:8080"
+    volumes:
+      - ./settings.yml:/etc/searxng/settings.yml:ro
+    environment:
+      - SEARXNG_SECRET=${SEARXNG_SECRET_KEY:-ultrasecretkey}
+      - SEARXNG_BASE_URL=http://searxng:8080/
+    networks:
+      gateway_net:
+        aliases:
+          - searxng
+          - searxng.internal
+
+networks:
+  gateway_net:
+    external: true

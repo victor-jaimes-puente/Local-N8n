@@ -37,6 +37,10 @@ Local-N8n/
 ├── sandbox/                                 # Isolated n8n Code Sandbox service
 │   ├── docker-compose.yaml                  # Sandbox API & Runner compose stack
 │   └── README.md                            # Sandbox architecture & systemd service guide
+├── searxng/                                 # Self-hosted SearXNG Search Engine
+│   ├── docker-compose.yaml                  # SearXNG Compose definition on gateway_net
+│   ├── settings.yml                         # SearXNG config (JSON format enabled)
+│   └── README.md                            # Service lifecycle & systemd unit guide
 ├── workflows/                               # Exported n8n workflow JSONs & documentation
 │   ├── README.md                            # Workflows directory index
 │   ├── meshnet-health-check/                # Meshnet HTTP ingress health probe
@@ -56,6 +60,8 @@ Local-N8n/
 │   ├── n8n-mcp-antigrvity-roadmap.md        # 5-Phase Antigravity MCP integration plan
 │   ├── Deploying Self-Hosted n8n Code Sandbox/
 │   │   └── plan.md                          # Implementation plan for isolated code sandbox
+│   ├── Deploying Self-Hosted SearXNG Search Engine/
+│   │   └── plan.md                          # Implementation plan for SearXNG metasearch engine
 │   └── repo-map/                            # Agent Repository Map (This directory)
 │       ├── README.md                        # Main navigation & summary index
 │       ├── ARCHITECTURE.md                  # Network topology, services & scaling specs
@@ -77,6 +83,7 @@ Local-N8n/
 - **Meshnet Private IP**: `100.116.224.88`
 - **Application Root**: `/home/silver-worker/Local-N8n`
 - **Sandbox Root**: `/home/silver-worker/Local-N8n/sandbox`
+- **SearXNG Root**: `/home/silver-worker/Local-N8n/searxng`
 
 ### Connection Method
 - **SSH Transport**: Authenticated via Ed25519 public key cryptography (`ssh -i ~/.ssh/id_ed25519 silver-worker@100.116.224.88` or shell alias `silverworker`).
@@ -95,11 +102,12 @@ Local-N8n/
 | Task / Domain | Key Files to Read / Edit |
 | :--- | :--- |
 | **Main n8n Stack** | [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml), Doppler project `silver-worker/prd` |
-| **Host Boot Persistence** | `/etc/systemd/system/local-n8n.service`, `/etc/systemd/system/local-n8n-sandbox.service` |
+| **Host Boot Persistence** | `/etc/systemd/system/local-n8n.service`, `/etc/systemd/system/local-n8n-sandbox.service`, `/etc/systemd/system/local-n8n-searxng.service` |
 | **Database Initialization** | [`init-data.sh`](file:///Users/victor/Dev/Local-N8n/init-data.sh), [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml) |
 | **Reverse Proxy & Ingress** | [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml), [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile) |
 | **Environment & Secrets** | [`.env-sample`](file:///Users/victor/Dev/Local-N8n/.env-sample), [`ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md) |
 | **Code Sandbox Stack** | [`sandbox/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/sandbox/docker-compose.yaml), [`sandbox/README.md`](file:///Users/victor/Dev/Local-N8n/sandbox/README.md) |
+| **SearXNG Search Engine** | [`searxng/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/searxng/docker-compose.yaml), [`searxng/settings.yml`](file:///Users/victor/Dev/Local-N8n/searxng/settings.yml), [`searxng/README.md`](file:///Users/victor/Dev/Local-N8n/searxng/README.md) |
 | **Operations & Runbooks** | [`README.md`](file:///Users/victor/Dev/Local-N8n/README.md), [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) |
 | **Exported Workflows** | [`workflows/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/README.md), [`workflows/meshnet-health-check/`](file:///Users/victor/Dev/Local-N8n/workflows/meshnet-health-check/), [`workflows/ai-testing/`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/) |
 | **MCP Server Config** | [`mcp_config.json`](file:///Users/victor/Dev/Local-N8n/mcp_config.json), [`.agents/mcp_config.json`](file:///Users/victor/Dev/Local-N8n/.agents/mcp_config.json) |

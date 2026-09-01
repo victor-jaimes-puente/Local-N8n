@@ -208,16 +208,26 @@ Workflows exported from n8n should be saved in `workflows/<workflow-slug>/` foll
 # workflows/<workflow-slug>/README.md     (Topology, triggers, credential IDs, test instructions)
 ```
 
-### Code Sandbox Service Deployment (`sysbox-runc`)
+### Code Sandbox Service Deployment
 To run the isolated Docker-in-Docker code sandbox alongside the stack:
 ```bash
-# 1. Install sysbox-runc runtime on Ubuntu host (one-time setup)
-curl -fsSL -o setup-sysbox.sh https://raw.githubusercontent.com/n8n-io/n8n-sandbox-service/refs/heads/main/scripts/setup-sysbox.sh
-chmod +x setup-sysbox.sh && sudo ./setup-sysbox.sh
-
-# 2. Inject SANDBOX_API_KEY into Doppler
+# 1. Inject SANDBOX_API_KEY into Doppler
 doppler secrets set SANDBOX_API_KEY="$(openssl rand -hex 24)" --project silver-worker --config prd
 
-# 3. Start Sandbox Stack
+# 2. Start Sandbox Stack
 cd sandbox && doppler run -- docker compose up -d
 ```
+
+### SearXNG Search Engine Service Deployment
+To run the self-hosted SearXNG metasearch engine for n8n AI Assistant:
+```bash
+# 1. Provision secret in Doppler
+doppler secrets set SEARXNG_SECRET_KEY="$(openssl rand -hex 32)" --project silver-worker --config prd
+
+# 2. Start SearXNG Stack
+cd searxng && doppler run -- docker compose up -d
+
+# 3. Test JSON Search Output
+curl "http://100.116.224.88:8088/search?q=n8n&format=json"
+```
+
