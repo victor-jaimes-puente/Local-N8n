@@ -49,6 +49,10 @@ Local-N8n/
 │   └── ai-testing/                          # Local AI testing flow with SearXNG web search
 │       ├── workflow.json                    # Formatted workflow JSON (LM Studio + SearXNG tool)
 │       └── README.md                        # Flow topology, search integration & cold load docs
+├── n8n-mcp/                                 # n8n MCP Server Implementation
+│   ├── src/mcp/server.ts                    # MCP Server initialization & resource handlers
+│   ├── src/mcp/handlers-n8n-manager.ts      # MCP tool execution logic & security rails
+│   └── src/mcp/tools-n8n-manager.ts         # MCP tool definitions
 ├── .agents/                                 # Antigravity IDE customizations & MCP config
 │   ├── mcp_config.json                      # Workspace MCP server configuration
 │   ├── sample_mcp_config.json               # Sanitized MCP configuration template

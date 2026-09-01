@@ -38,6 +38,9 @@
 | [`.agents/skills/n8n-architect/resources/expressions-reference.md`](file:///Users/victor/Dev/Local-N8n/.agents/skills/n8n-architect/resources/expressions-reference.md) | Markdown | 142 | Modern n8n v1+ expression syntax guide (Luxon dates, `$json`, `$item`, JMESPath, binary handling). |
 | [`.agents/skills/n8n-architect/resources/core-node-schemas.md`](file:///Users/victor/Dev/Local-N8n/.agents/skills/n8n-architect/resources/core-node-schemas.md) | Markdown | 391 | Production JSON skeletons for If, Switch, Code, HTTP Request, Merge, Aggregate, and ExecuteWorkflow. |
 | [`.agents/skills/n8n-architect/resources/workflow-patterns.md`](file:///Users/victor/Dev/Local-N8n/.agents/skills/n8n-architect/resources/workflow-patterns.md) | Markdown | 195 | Production architectural patterns (Webhook ingest/response, API pagination, Sub-workflows, Local AI). |
+| [`n8n-mcp/src/mcp/server.ts`](file:///Users/victor/Dev/Local-N8n/n8n-mcp/src/mcp/server.ts) | TypeScript | >4000 | Core MCP server initialization, tool registration, resources, and prompt handling. |
+| [`n8n-mcp/src/mcp/handlers-n8n-manager.ts`](file:///Users/victor/Dev/Local-N8n/n8n-mcp/src/mcp/handlers-n8n-manager.ts) | TypeScript | >5000 | Handlers for executing n8n API operations, evaluating expressions, and enforcing safety rails (like `active: false` and `Agent-Generated` tags). |
+| [`n8n-mcp/src/mcp/tools-n8n-manager.ts`](file:///Users/victor/Dev/Local-N8n/n8n-mcp/src/mcp/tools-n8n-manager.ts) | TypeScript | >1000 | Defines the inputs and descriptions for workflow management tools, execution tests, and expression validation. |
 | [`.agents/mcp_config.json`](file:///Users/victor/Dev/Local-N8n/.agents/mcp_config.json) | JSON | 23 | Workspace MCP server configuration targeting Meshnet n8n instance via Doppler runtime wrapper. |
 | [`.agents/sample_mcp_config.json`](file:///Users/victor/Dev/Local-N8n/.agents/sample_mcp_config.json) | JSON | 23 | Sanitized template for Model Context Protocol (MCP) server configuration. |
 | [`AGENTS.md`](file:///Users/victor/Dev/Local-N8n/AGENTS.md) | Markdown | 11 | Root agent guidelines enforcing MCP Server First and Meshnet n8n guardrails. |
@@ -142,6 +145,11 @@
 ### N. [`sandbox/`](file:///Users/victor/Dev/Local-N8n/sandbox/) (Code Sandbox Service)
 - **`docker-compose.yaml`**: Official companion stack running `sandbox-api` (port 3200), `sandbox-runner`, and `registry` (port 5050), integrated with `gateway_net` and Doppler secrets (`SANDBOX_API_KEY`).
 - **`README.md`**: Sandbox service architecture, endpoint health verification, and `/etc/systemd/system/local-n8n-sandbox.service` unit setup.
+
+### G. `n8n-mcp/` (Custom MCP Server)
+- **`src/mcp/server.ts`**: Core MCP runtime defining standard resources (`resource://n8n/environment`, `resource://n8n/executions/{id}`) and canonical prompts (`bootstrap_webhook_workflow`, `n8n_expression_syntax`).
+- **`src/mcp/tools-n8n-manager.ts`**: Schema definitions bridging n8n's raw API into structured AI actions, including `n8n_create_workflow` and testing utilities like `n8n_test_workflow` and `n8n_validate_expression`.
+- **`src/mcp/handlers-n8n-manager.ts`**: Execution backend enforcing strict safety guidelines: overriding payloads to ensure `active: false` on creation, auto-appending `Agent-Generated` tags, and running sandboxed JS expression validation without triggering live n8n node side effects.
 
 ### O. [`searxng/`](file:///Users/victor/Dev/Local-N8n/searxng/) (Metasearch Engine Service)
 - **`docker-compose.yaml`**: Standalone SearXNG service attached to `gateway_net` with aliases `searxng` and `searxng.internal` on port 8080.

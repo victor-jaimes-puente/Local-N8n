@@ -13,6 +13,15 @@ services:
     networks:
       - gateway_net
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - gateway_net
+
 volumes:
   caddy_data:
   caddy_config:
@@ -20,4 +29,3 @@ volumes:
 networks:
   gateway_net:
     external: true
-
