@@ -231,3 +231,44 @@ cd searxng && doppler run -- docker compose up -d
 curl "http://100.116.224.88:8088/search?q=n8n&format=json"
 ```
 
+---
+
+## 7. Local AI Inference & LM Studio Operations (Hulk `100.64.153.30`)
+
+### A. LM Studio Local Server Setup on Hulk
+1. Open **LM Studio** on the `hulk` machine (`100.64.153.30`).
+2. Navigate to the **Developer / Local Server** tab (`<->` icon).
+3. Under Server Settings:
+   - Ensure **Port** is set to `1234`.
+   - Ensure **CORS** is enabled.
+   - Load desired LLM or embedding models into GPU/RAM (or enable JIT / auto-loading).
+
+### B. Windows Port Forwarding & Firewall Setup
+If LM Studio is bound to `127.0.0.1`, bridge incoming Meshnet traffic directly to the local server:
+```powershell
+# Run in Administrator PowerShell / Command Prompt on Hulk:
+
+# 1. Add port forwarding from all interfaces to local LM Studio
+netsh interface portproxy add v4tov4 listenport=1234 listenaddress=0.0.0.0 connectport=1234 connectaddress=127.0.0.1
+
+# 2. Allow inbound TCP traffic on port 1234 in Windows Firewall
+New-NetFirewallRule -DisplayName "LM Studio Meshnet" -Direction Inbound -LocalPort 1234 -Protocol TCP -Action Allow
+```
+
+### C. Verify Connectivity from Automation Host (`silver-worker`)
+From `silver-worker` or any Meshnet client, query the OpenAI-compatible `/v1/models` endpoint:
+```bash
+curl http://100.64.153.30:1234/v1/models
+```
+*Expected output: JSON array containing active models (`qwen/qwen3-14b`, `google/gemma-4-26b-a4b-qat`, etc.).*
+
+### D. Workflow Configuration in n8n
+1. In n8n (`https://n8n.local-n8n.com`), create an **OpenAI API** credential:
+   - **Credential Name**: `Hulk LM Studio`
+   - **API Key**: `lm-studio` (any placeholder token)
+2. Add an **OpenAI Chat Model** (`@n8n/n8n-nodes-langchain.lmChatOpenAi`) node to your workflow:
+   - **Credential**: `Hulk LM Studio`
+   - **Model**: Model name (e.g. `qwen/qwen3-14b` or custom)
+   - **Options -> Base URL**: `http://100.64.153.30:1234/v1`
+
+

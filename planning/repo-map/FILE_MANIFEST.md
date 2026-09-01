@@ -15,7 +15,7 @@
 | [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml) | YAML | 28 | Standalone Caddy reverse proxy Compose file bound strictly to Meshnet IP adapters on `gateway_net`. |
 | [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile) | Caddy | 14 | Ingress routing rules for `n8n.local-n8n.com` (with WebSocket flush interval) and `lingua.local-n8n.com`. |
 | [`caddy/n8n-docker-caddy/caddy_config/Caddyfile`](file:///Users/victor/Dev/Local-N8n/caddy/n8n-docker-caddy/caddy_config/Caddyfile) | Caddy | 15 | Legacy standalone Caddy configuration mapping `n8n.local.test` to `n8n:5678`. |
-| [`README.md`](file:///Users/victor/Dev/Local-N8n/README.md) | Markdown | 130 | Production deployment manual covering NordVPN Meshnet, Doppler injection, systemd boot persistence, and troubleshooting. |
+| [`README.md`](file:///Users/victor/Dev/Local-N8n/README.md) | Markdown | 139 | Production deployment manual covering NordVPN Meshnet, Doppler injection, systemd boot persistence, LM Studio inference, and troubleshooting. |
 | [`DOCKER-WSL.md`](file:///Users/victor/Dev/Local-N8n/DOCKER-WSL.md) | Markdown | 95 | Detailed integration manual for Docker Desktop and WSL 2 on Windows 11. |
 | [`WSL.md`](file:///Users/victor/Dev/Local-N8n/WSL.md) | Markdown | 197 | Comprehensive Ubuntu WSL 2 installation, systemd enablement, networking, and performance tuning guide. |
 | [`planning/roadmmap-1.md`](file:///Users/victor/Dev/Local-N8n/planning/roadmmap-1.md) | Markdown | 22 | 4-Phase Infrastructure Roadmap (Central proxy, n8n queue stack, Lingua CI/CD over Meshnet, guardrails). |
@@ -24,8 +24,8 @@
 | [`workflows/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/README.md) | Markdown | 22 | Workflows directory index and export standards. |
 | [`workflows/meshnet-health-check/workflow.json`](file:///Users/victor/Dev/Local-N8n/workflows/meshnet-health-check/workflow.json) | JSON | 77 | Exported JSON definition for Meshnet-Health-Check workflow. |
 | [`workflows/meshnet-health-check/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/meshnet-health-check/README.md) | Markdown | 67 | Documentation and test guide for Meshnet-Health-Check. |
-| [`workflows/ai-testing/workflow.json`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/workflow.json) | JSON | 214 | Exported JSON definition for AI-TESTING workflow. |
-| [`workflows/ai-testing/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/README.md) | Markdown | 77 | Documentation and architecture for AI-TESTING comparison flow. |
+| [`workflows/ai-testing/workflow.json`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/workflow.json) | JSON | 214 | Exported JSON definition for AI-TESTING workflow configured with Hulk LM Studio (`http://100.64.153.30:1234/v1`). |
+| [`workflows/ai-testing/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/README.md) | Markdown | 77 | Documentation and architecture for AI-TESTING comparison flow (Hulk LM Studio vs Gemini). |
 | [`sandbox/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/sandbox/docker-compose.yaml) | YAML | 103 | Isolated n8n Code Sandbox service Compose stack (`sandbox-api`, `sandbox-runner`, `registry`). |
 | [`sandbox/README.md`](file:///Users/victor/Dev/Local-N8n/sandbox/README.md) | Markdown | 45 | Code sandbox architecture, systemd service guide, and Doppler secrets integration. |
 | [`searxng/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/searxng/docker-compose.yaml) | YAML | 22 | SearXNG metasearch engine Compose definition attached to `gateway_net`. |
@@ -40,11 +40,11 @@
 | `/etc/systemd/system/local-n8n.service` | Systemd | 24 | Host systemd unit managing n8n core stack boot persistence with Doppler secrets injection. |
 | `/etc/systemd/system/local-n8n-sandbox.service` | Systemd | 24 | Host systemd unit managing sandbox service boot persistence with Doppler secrets injection. |
 | `/etc/systemd/system/local-n8n-searxng.service` | Systemd | 24 | Host systemd unit managing SearXNG service boot persistence with Doppler secrets injection. |
-| [`planning/repo-map/README.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/README.md) | Markdown | 126 | Agent entry point, repository architecture summary, host connection specs, and quick reference index. |
-| [`planning/repo-map/ARCHITECTURE.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ARCHITECTURE.md) | Markdown | 238 | System topology, Mermaid diagrams, Zero-Trust adapter bindings, systemd boot sequence, queue lifecycle, and agent safeguards. |
-| [`planning/repo-map/ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md) | Markdown | 82 | Environment variable dictionary, Doppler runtime injection guide, and directory token binding. |
-| [`planning/repo-map/FILE_MANIFEST.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/FILE_MANIFEST.md) | Markdown | 147 | Complete file index, line counts, and deep component analysis (This file). |
-| [`planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) | Markdown | 233 | Step-by-step commands, SSH access, Doppler launch runbook, systemd unit setup, client DNS setup, and roadmap status. |
+| [`planning/repo-map/README.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/README.md) | Markdown | 126 | Agent entry point, dual-host architecture summary (Automation & AI Compute), and quick reference index. |
+| [`planning/repo-map/ARCHITECTURE.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ARCHITECTURE.md) | Markdown | 257 | System topology, Mermaid diagrams, Meshnet AI inference layer, systemd boot sequence, and agent safeguards. |
+| [`planning/repo-map/ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md) | Markdown | 84 | Environment variable dictionary, LM Studio endpoint reference, and Doppler runtime injection guide. |
+| [`planning/repo-map/FILE_MANIFEST.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/FILE_MANIFEST.md) | Markdown | 152 | Complete file index, line counts, and deep component analysis (This file). |
+| [`planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) | Markdown | 274 | Step-by-step commands, SSH access, LM Studio operations & port forwarding, systemd unit setup, and roadmap status. |
 
 ---
 
@@ -130,7 +130,7 @@
 
 ### M. [`workflows/`](file:///Users/victor/Dev/Local-N8n/workflows/) (Exported Automations)
 - **`meshnet-health-check/`**: Webhook probe returning server timestamp, health status, and execution mode over Meshnet tunnel.
-- **`ai-testing/`**: Side-by-side comparative inference flow between Local LLM (Ollama/vLLM) and Google Gemini using OpenAI-compatible connectors.
+- **`ai-testing/`**: Side-by-side comparative inference flow between Local LLM on Hulk (`http://100.64.153.30:1234/v1`) and Google Gemini using OpenAI-compatible connectors.
 
 ### N. [`sandbox/`](file:///Users/victor/Dev/Local-N8n/sandbox/) (Code Sandbox Service)
 - **`docker-compose.yaml`**: Official companion stack running `sandbox-api` (port 3200), `sandbox-runner`, and `registry` (port 5050), integrated with `gateway_net` and Doppler secrets (`SANDBOX_API_KEY`).
@@ -143,5 +143,10 @@
 
 ### P. [`planning/Deploying Self-Hosted SearXNG Search Engine/plan.md`](file:///Users/victor/Dev/Local-N8n/planning/Deploying%20Self-Hosted%20SearXNG%20Search%20Engine/plan.md)
 - Complete architecture plan, network topology diagram, Doppler secret provisioning, and step-by-step verification runbook for SearXNG.
+
+### Q. Local AI Inference Node (Hulk Compute Host `100.64.153.30`)
+- Dedicated compute node running LM Studio with OpenAI-compatible REST server on port `1234`.
+- Proxied over Meshnet via Windows `netsh portproxy` for zero-latency local inference from n8n workflows (`http://100.64.153.30:1234/v1`).
+- Serves quantized local models (Qwen 3, Gemma 4, Nomic text embeddings) with full privacy and zero egress cost.
 
 

@@ -117,6 +117,16 @@ sudo systemctl status local-n8n.service
 
 ---
 
+## Local AI Inference over Meshnet (LM Studio on Hulk)
+
+The architecture supports local, private AI inference across machines on the NordVPN Meshnet:
+- **Compute Host (`hulk`)**: `100.64.153.30` running LM Studio on port `1234`.
+- **OpenAI-Compatible Base URL**: `http://100.64.153.30:1234/v1`
+- **Windows Port Forwarding**: `netsh interface portproxy add v4tov4 listenport=1234 listenaddress=0.0.0.0 connectport=1234 connectaddress=127.0.0.1`
+- **Workflow Integration**: Use the standard `@n8n/n8n-nodes-langchain.lmChatOpenAi` node with Base URL set to `http://100.64.153.30:1234/v1` and placeholder API key `lm-studio`.
+
+---
+
 ## Troubleshooting
 
 - **Database Authentication Errors:** If Postgres fails to authenticate, it may be due to leftover data from a previous misconfigured run. You must destroy the volume and recreate it:

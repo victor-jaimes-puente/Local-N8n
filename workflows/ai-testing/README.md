@@ -1,6 +1,6 @@
 # Workflow: AI-TESTING
 
-A multi-provider AI evaluation workflow designed to run comparative inference side-by-side between **Local AI (Ollama / vLLM / LocalAI)** and **Google Gemini** using OpenAI-compatible connectors.
+A multi-provider AI evaluation workflow designed to run comparative inference side-by-side between **Local AI (Hulk LM Studio / Qwen / Gemma)** and **Google Gemini** using OpenAI-compatible connectors over NordVPN Meshnet.
 
 ---
 
@@ -25,7 +25,7 @@ graph TD
     InputNode --> LocalChain["Local AI Inference Chain (LLM Chain)"]
     InputNode --> GeminiChain["Google Gemini Inference Chain (LLM Chain)"]
     
-    LocalModel["Local OpenAI-Compatible Model (Chat Model)<br/>Base URL: http://host.docker.internal:11434/v1"] -.->|ai_languageModel| LocalChain
+    LocalModel["Hulk LM Studio Model (Chat Model)<br/>Base URL: http://100.64.153.30:1234/v1"] -.->|ai_languageModel| LocalChain
     GeminiModel["Gemini OpenAI-Compatible Model (Chat Model)<br/>Base URL: https://generativelanguage.googleapis.com/v1beta/openai/"] -.->|ai_languageModel| GeminiChain
     
     LocalChain --> CompareNode["Compare & Format Results (Code Node)"]
@@ -36,12 +36,12 @@ graph TD
 
 ## 3. Configured Providers
 
-### 1. Local AI Inference
+### 1. Local AI Inference (Hulk LM Studio)
 - **Chain**: `Local AI Inference Chain` (`n8n-nodes-langchain.chainLlm`)
 - **Subnode**: `Local OpenAI-Compatible Model` (`n8n-nodes-langchain.lmChatOpenAi`)
-- **Base URL**: `http://host.docker.internal:11434/v1` (Accessible from within Docker container to host machine Ollama/LocalAI)
-- **Default Model**: `llama3.2`
-- **Authentication**: Requires any placeholder OpenAI credential (e.g. `ollama`).
+- **Base URL**: `http://100.64.153.30:1234/v1` (Accessible directly across Meshnet tunnel from n8n & workers)
+- **Default Model**: `qwen/qwen3-14b` *(or any loaded model such as `google/gemma-4-26b-a4b-qat`, `qwen/qwen3.8-27b`, etc.)*
+- **Authentication**: Requires placeholder OpenAI credential (e.g. `lm-studio`).
 
 ### 2. Google Gemini Inference
 - **Chain**: `Google Gemini Inference Chain` (`n8n-nodes-langchain.chainLlm`)
@@ -63,8 +63,8 @@ When executed, the **Compare & Format Results** node merges outputs into a struc
   "timestamp": "2026-08-31T22:53:10.950Z",
   "providers": {
     "local_openai_compatible": {
-      "model": "Local Model (e.g. llama3.2 / ollama / vLLM)",
-      "endpoint": "http://host.docker.internal:11434/v1",
+      "model": "qwen/qwen3-14b",
+      "endpoint": "http://100.64.153.30:1234/v1",
       "response": "Quantum computing uses qubits that exist in multiple states simultaneously via superposition. This enables solving certain complex problems exponentially faster than classical computers."
     },
     "google_gemini_openai_compatible": {

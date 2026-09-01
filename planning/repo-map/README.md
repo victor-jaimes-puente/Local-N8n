@@ -78,16 +78,15 @@ Local-N8n/
 ## 3. Remote Host & Agent Connection Model
 
 ### Host Specifications
-- **Server Identity**: `silver-worker` (Dell Precision 5480)
-- **Kernel / OS**: Ubuntu Server (Linux `7.0.0-30-generic` x86_64)
-- **Meshnet Private IP**: `100.116.224.88`
+- **Automation Server (`silver-worker`)**: Dell Precision 5480, Ubuntu Server (`7.0.0-30-generic` x86_64) — Meshnet IP `100.116.224.88` (Hosts n8n, Caddy, Postgres, Redis, Sandbox, SearXNG).
+- **AI Inference Server (`hulk`)**: High-Performance Compute Host (Windows) — Meshnet IP `100.64.153.30` (Hosts LM Studio OpenAI-compatible local LLM server on port `1234`).
 - **Application Root**: `/home/silver-worker/Local-N8n`
 - **Sandbox Root**: `/home/silver-worker/Local-N8n/sandbox`
 - **SearXNG Root**: `/home/silver-worker/Local-N8n/searxng`
 
 ### Connection Method
 - **SSH Transport**: Authenticated via Ed25519 public key cryptography (`ssh -i ~/.ssh/id_ed25519 silver-worker@100.116.224.88` or shell alias `silverworker`).
-- **Zero-Trust Network**: Remote shell access is routed exclusively over the private NordVPN Meshnet tunnel, inaccessible from public IP ranges or unauthenticated local Wi-Fi.
+- **Zero-Trust Network**: Remote shell access and cross-node LLM inference traffic are routed exclusively over the private NordVPN Meshnet tunnel, inaccessible from public IP ranges or unauthenticated local Wi-Fi.
 
 ### Agent Safeguards & Guardrails
 1. **Zero-Disk Secret Policy**: Agents must never commit, output, or write plaintext tokens to `.env` files. Secrets must strictly be managed through Doppler (`silver-worker/prd`).
@@ -102,6 +101,7 @@ Local-N8n/
 | Task / Domain | Key Files to Read / Edit |
 | :--- | :--- |
 | **Main n8n Stack** | [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml), Doppler project `silver-worker/prd` |
+| **Local AI Inference (Hulk)** | `http://100.64.153.30:1234/v1`, [`workflows/ai-testing/`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/), [`ARCHITECTURE.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ARCHITECTURE.md) |
 | **Host Boot Persistence** | `/etc/systemd/system/local-n8n.service`, `/etc/systemd/system/local-n8n-sandbox.service`, `/etc/systemd/system/local-n8n-searxng.service` |
 | **Database Initialization** | [`init-data.sh`](file:///Users/victor/Dev/Local-N8n/init-data.sh), [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml) |
 | **Reverse Proxy & Ingress** | [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml), [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile) |

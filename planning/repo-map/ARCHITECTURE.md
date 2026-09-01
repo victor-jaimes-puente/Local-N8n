@@ -10,7 +10,7 @@ The infrastructure decouples web ingress (Caddy reverse proxy bound to private V
 
 ```mermaid
 graph TD
-    Client[Client Browser / Device on NordVPN Meshnet] -->|HTTPS :443 TCP/UDP, HTTP :80| MeshnetIP["Meshnet Adapters (100.116.224.88 / 100.64.153.30)"]
+    Client[Client Browser / Device on NordVPN Meshnet] -->|HTTPS :443 TCP/UDP, HTTP :80| MeshnetIP["Meshnet Ingress Adapter (100.116.224.88)"]
     
     MeshnetIP --> GatewayCaddy[gateway/caddy Container]
     
@@ -29,7 +29,7 @@ graph TD
     GatewayCaddy -->|Proxy n8n.local-n8n.com -> n8n:5678 (flush_interval -1)| N8NMain[n8n Main Service UI/API]
     GatewayCaddy -.->|Proxy lingua.local-n8n.com -> lingua:3000| LinguaApp[External Service: Lingua]
     
-    subgraph N8NStack["n8n Compose Stack (compose.yaml)"]
+    subgraph N8NStack["n8n Compose Stack (compose.yaml on silver-worker 100.116.224.88)"]
         N8NMain
         N8NWorker[n8n-worker Execution Unit]
         Postgres[(PostgreSQL 16 DB)]
@@ -40,6 +40,13 @@ graph TD
         N8NWorker -->|Poll & Consume Jobs| Redis
         N8NWorker -->|Read/Write Executions| Postgres
     end
+
+    subgraph HulkHost["Remote AI Compute Host: Hulk (100.64.153.30)"]
+        LMStudio["LM Studio Local Server (:1234/v1)<br/>OpenAI-Compatible Models<br/>(Qwen 3, Gemma 4, Nomic Embeddings)"]
+    end
+
+    N8NMain -->|LLM Inference over Meshnet: http://100.64.153.30:1234/v1| LMStudio
+    N8NWorker -->|Background Inference over Meshnet: http://100.64.153.30:1234/v1| LMStudio
     
     subgraph NamedVolumes["Docker Volumes & Storage"]
         Postgres --- VolDB[(db_storage)]
@@ -196,17 +203,29 @@ graph TD
    - For code-execution nodes and AI Assistant tools, n8n dispatches JavaScript/Python code execution to the companion service (`n8n-sandbox-service`) in `/home/silver-worker/Local-N8n/sandbox`.
    - Listens on `http://sandbox-api:3200` attached to `gateway_net` and bound on the host to `127.0.0.1:3200` and `100.116.224.88:3200`.
    - Guaranteed isolated from host root and database volumes via internal `sandbox_service` Docker bridge.
+3. **Local AI Inference Engine (LM Studio on Hulk `100.64.153.30`)**:
+   - High-throughput, local, private LLM and embedding inference is hosted on the dedicated compute machine **Hulk** via **LM Studio**.
+   - **Endpoint Base URL**: `http://100.64.153.30:1234/v1`
+   - **Protocol**: OpenAI-compatible REST API (`/v1/chat/completions`, `/v1/models`, `/v1/embeddings`).
+   - **Port Forwarding / Interface Binding**: Windows portproxy (`netsh interface portproxy add v4tov4 listenport=1234 listenaddress=0.0.0.0 connectport=1234 connectaddress=127.0.0.1`) forwards incoming Meshnet requests on port `1234` to the local LM Studio instance.
+   - **Model Catalog**: Serves models including `qwen/qwen3-14b`, `qwen/qwen3.8-27b`, `qwen/qwen3.5-9b`, `qwen/qwen3.6-35b-a3b`, `google/gemma-4-26b-a4b-qat`, `google/gemma-4-12b-qat`, `text-embedding-nomic-embed-text-v1.5`, and `google/gemma-4-12b`.
+   - **n8n Workflow Integration**: Connects via `@n8n/n8n-nodes-langchain.lmChatOpenAi` / `n8n-nodes-langchain.lmChatOpenAi` node with Base URL set to `http://100.64.153.30:1234/v1` and placeholder credentials (`lm-studio`).
 
 ---
 
 ## 7. Agent Remote Connection Model & Operational Safeguards
 
 ### A. Remote Host Infrastructure
-- **Server Identity**: `silver-worker` (Dell Precision 5480)
-- **Operating System**: Ubuntu Server (Linux `7.0.0-30-generic` x86_64)
-- **Meshnet Private IP**: `100.116.224.88`
-- **Application Workdir**: `/home/silver-worker/Local-N8n`
-- **Sandbox Workdir**: `/home/silver-worker/Local-N8n/sandbox`
+- **Automation Host (`silver-worker`)**:
+  - Hardware: Dell Precision 5480
+  - Operating System: Ubuntu Server (Linux `7.0.0-30-generic` x86_64)
+  - Meshnet Private IP: `100.116.224.88`
+  - Application Workdir: `/home/silver-worker/Local-N8n`
+  - Sandbox Workdir: `/home/silver-worker/Local-N8n/sandbox`
+- **AI Inference Compute Host (`hulk`)**:
+  - Operating System: Windows (Meshnet node)
+  - Meshnet Private IP: `100.64.153.30`
+  - Local AI Server: LM Studio OpenAI-compatible endpoint at `http://100.64.153.30:1234/v1`
 
 ### B. Agent Connection Architecture
 ```mermaid

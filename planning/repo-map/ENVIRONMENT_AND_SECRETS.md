@@ -40,6 +40,8 @@
 | `SANDBOX_API_LISTEN_ADDR` | Public HTTP listen address for sandbox API container | `sandbox/` stack | `:3200` |
 | `SANDBOX_API_PORT` | Host exposed port for code sandbox service | `sandbox/` stack | `3200` |
 | `SEARXNG_SECRET_KEY` | High-entropy secret key securing SearXNG instance | `searxng/` stack, Doppler | *(High-entropy secret token)* |
+| `HULK_LMSTUDIO_BASE_URL` | OpenAI-compatible endpoint for LM Studio LLM inference on Hulk | n8n Workflows / Nodes | `http://100.64.153.30:1234/v1` |
+| `HULK_LMSTUDIO_API_KEY` | Placeholder API key for LM Studio OpenAI credentials in n8n | n8n Credential Vault | `lm-studio` *(any string)* |
 
 ---
 
