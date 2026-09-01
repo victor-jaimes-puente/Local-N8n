@@ -10,6 +10,7 @@ This directory contains version-controlled exports of all active and staging n8n
 | :--- | :--- | :--- | :--- | :--- |
 | [`ai-testing/`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/) | `AI-TESTING` | `5rRB16PM6Tx07ZB0` | Chat / Manual (`Test workflow`) | Interactive Chat and Manual prompt testing flow for local LLMs on Hulk (`http://100.64.153.30:1234/v1`) with live SearXNG web search capabilities. |
 | [`meshnet-health-check/`](file:///Users/victor/Dev/Local-N8n/workflows/meshnet-health-check/) | `Meshnet-Health-Check` | `XRDcHq3GIEZQKprT` | Webhook (`GET /meshnet-health-check`) | End-to-end health probe validating Meshnet HTTP ingress, Redis Bull queue scheduling, and PostgreSQL recording. |
+| [`slack/`](file:///Users/victor/Dev/Local-N8n/workflows/slack/) | `Slack` | `8irpSdMtOgDVxsSb` | Webhook / Execute Sub-Workflow | Production Slack integration to send and receive messages using existing `TiranoTech` OAuth2 credentials. |
 | [`tool-searxng-search/`](file:///Users/victor/Dev/Local-N8n/workflows/tool-searxng-search/) | `Tool-SearXNG-Search` | `hk8OViFZWBnveSCF` | Execute Workflow Trigger | Reusable AI Agent Web Search Tool sub-workflow executing live queries against local SearXNG (`http://searxng:8080`). |
 
 ---

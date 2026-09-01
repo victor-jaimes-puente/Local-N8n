@@ -14,7 +14,7 @@ Key Architectural Capabilities:
 - **Zero-Trust Ingress**: Caddy is bound exclusively to private Meshnet IP interfaces (`100.116.224.88`, `100.64.153.30`) with HTTP/3 UDP 443 support, rendering the server completely invisible to local LAN networks.
 - **Dynamic Secret Injection**: Zero disk secrets in production. All environment variables, database passwords, and encryption keys are injected at runtime via Doppler (`doppler run -- docker compose up -d`).
 - **Host Boot Persistence (`systemd`)**: A host-level unit (`/etc/systemd/system/local-n8n.service`) automatically launches the stack with Doppler runtime injection upon machine reboots, preventing un-injected credential failures.
-- **Scalable Queue Mode**: Separates UI/API handling (`n8n`) from asynchronous execution processing (`n8n-worker`) via Redis Bull queue, supporting horizontal worker scaling.
+- **Scalable Queue Mode**: Separates UI/API handling (`n8n`) from asynchronous execution processing (`n8n-worker`) via RedisV Bull queue, supporting horizontal worker scaling.
 - **Automated Data Pruning & Log Rotation**: Protects storage volumes via built-in n8n execution pruning (`EXECUTIONS_DATA_PRUNE=true`, 168-hour retention, 50k max count) and Docker daemon JSON log rotation (`max-size: 10m`, `max-file: 3`).
 - **Multi-Tenant Gateway Network**: Central external bridge (`gateway_net`) enabling unified reverse proxying for both n8n and companion microservices (such as **Lingua**).
 

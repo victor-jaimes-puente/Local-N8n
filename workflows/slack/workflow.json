@@ -1,0 +1,241 @@
+{
+  "name": "Slack",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "slack-events",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "slack-webhook-01",
+      "name": "Slack Events Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 200],
+      "webhookId": "slack-events-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.body?.type }}",
+              "rightValue": "url_verification",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "slack-if-challenge",
+      "name": "Is URL Verification?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [480, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ challenge: $json.body.challenge }) }}",
+        "options": {}
+      },
+      "id": "slack-respond-challenge",
+      "name": "Respond Challenge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nconst event = body.event || {};\n\n// Ignore bot messages to avoid echo loops\nif (event.bot_id || event.subtype === \"bot_message\") {\n  return [];\n}\n\nreturn [{\n  json: {\n    eventType: event.type || \"message\",\n    channel: event.channel || \"\",\n    user: event.user || \"\",\n    text: event.text || \"\",\n    ts: event.ts || \"\",\n    thread_ts: event.thread_ts || event.ts || \"\",\n    rawEvent: event,\n    receivedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "slack-parse-inbound",
+      "name": "Parse Inbound Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: \"received\", event: $json }) }}",
+        "options": {}
+      },
+      "id": "slack-respond-ok",
+      "name": "Acknowledge Event",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "channel" },
+            { "name": "text" },
+            { "name": "thread_ts" }
+          ]
+        }
+      },
+      "id": "slack-trig-subwf",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 520]
+    },
+    {
+      "parameters": {},
+      "id": "slack-trig-manual",
+      "name": "When clicking \"Test workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.first() ? $input.first().json : {};\n\nconst channel = inputData.channel || inputData.channelId || \"general\";\nconst text = inputData.text || inputData.message || \"Hello from n8n Slack Integration!\";\nconst thread_ts = inputData.thread_ts || inputData.threadTs || \"\";\n\nreturn [{\n  json: {\n    channel,\n    text,\n    thread_ts,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "slack-prep-outbound",
+      "name": "Prepare Outbound Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 600]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $json.channel }}",
+          "mode": "name"
+        },
+        "text": "={{ $json.text }}",
+        "otherOptions": {
+          "threadTs": "={{ $json.thread_ts || undefined }}"
+        }
+      },
+      "id": "slack-post-message",
+      "name": "Slack: Post Message",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [760, 600],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "aSF0sVdzDzhmMBK3",
+          "name": "TiranoTech"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const slackResult = $input.first() ? $input.first().json : {};\nreturn [{\n  json: {\n    success: true,\n    channel: slackResult.channel || $(\"Prepare Outbound Message\").first().json.channel,\n    ts: slackResult.ts || \"\",\n    message: slackResult.message || $(\"Prepare Outbound Message\").first().json.text,\n    deliveredAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "slack-format-result",
+      "name": "Format Send Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1020, 600]
+    }
+  ],
+  "connections": {
+    "Slack Events Webhook": {
+      "main": [
+        [
+          {
+            "node": "Is URL Verification?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is URL Verification?": {
+      "main": [
+        [
+          {
+            "node": "Respond Challenge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse Inbound Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Inbound Message": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Prepare Outbound Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking \"Test workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Prepare Outbound Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Outbound Message": {
+      "main": [
+        [
+          {
+            "node": "Slack: Post Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Post Message": {
+      "main": [
+        [
+          {
+            "node": "Format Send Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

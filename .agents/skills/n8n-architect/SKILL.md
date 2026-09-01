@@ -11,7 +11,7 @@ description: Authoritative skill for designing, scaffolding, modifying, and debu
 > ### Primary Directive: n8n MCP Server First & Only
 > The agent **MUST ALWAYS use the connected `n8n-mcp` server tools as the primary, default, and exclusive interface** for all n8n operations whenever interacting with workflows, nodes, credentials, and executions.
 > 
-> **Never bypass the MCP server** with ad-hoc shell commands, direct database queries, raw curl commands, or speculative JSON generation when an MCP tool exists. If an operation is natively supported by `n8n-mcp`, that MCP tool **must be used first and only**.
+> **Never bypass the MCP server** with ad-hoc shell commands, direct database queries, raw curl commands, or speculative JSON generation. If an operation is unsupported by the MCP protocol, STOP and ask the user for clarification. Do not fall back to shell scripts or curl.
 
 ---
 
@@ -19,9 +19,9 @@ description: Authoritative skill for designing, scaffolding, modifying, and debu
 
 ### A. MCP-First Interaction Protocol
 * **Workflow Discovery & Retrieval**: Always invoke `list_workflows` and `get_workflow` to inspect live definitions rather than guessing IDs or inspecting stale local files.
-* **Schema-Driven Scaffolding**: Always call `get_node_schema` to verify parameter names, types, and defaults before constructing or patching any node.
+* **Schema-Driven Scaffolding**: Always call `get_node` (with `mode="info"`) to verify parameter names, types, and defaults before constructing or patching any node.
 * **Pre-Flight Validation**: Always run `validate_workflow_schema` on the full workflow JSON payload before executing `create_workflow` or `update_workflow`.
-* **Zero-Disk Credential Vault Separation**: Never embed raw API tokens, passwords, or secrets into node JSON. Query existing credential IDs using `list_credentials` and connect nodes by ID.
+* **Zero-Disk Credential Vault Separation**: Never embed raw API tokens, passwords, or secrets into node JSON. Query existing credential IDs using `list_credentials` (if available, otherwise ask the user) and connect nodes by ID.
 * **Execution & Diagnostic Traceability**: Inspect workflow runs and error stacks directly via `list_executions` and `get_execution`.
 
 ### B. Data Structure & Item-List Protocol
@@ -60,8 +60,8 @@ When executing any n8n automation task, follow this strict tool priority:
 ```mermaid
 graph TD
     subgraph Discovery["1. Discovery & Introspection (MCP Only)"]
-        T1["list_nodes / get_node_schema<br/>(Inspect exact node definitions)"]
-        T2["list_credentials / get_credential_schema<br/>(Inspect credential IDs)"]
+        T1["list_nodes / get_node (mode='info')<br/>(Inspect exact node definitions)"]
+        T2["list_credentials (if available)<br/>(Inspect credential IDs)"]
         T3["list_workflows / get_workflow<br/>(Inspect live workflow topology)"]
     end
 
@@ -88,20 +88,20 @@ graph TD
 | Engineering Phase | MCP Tool | Strict Calling Requirement |
 | :--- | :--- | :--- |
 | **Node Introspection** | `list_nodes` | Query all installed node types and versions available on the server. |
-| **Node Introspection** | `get_node_schema` | **Mandatory** before creating/updating any node. Inspect exact parameter keys and types. |
-| **Node Introspection** | `get_node_documentation` | Retrieve official n8n documentation and usage patterns for a node. |
-| **Credential Discovery** | `list_credentials` | **Mandatory** before attaching credentials. Find existing credential IDs without disk secrets. |
+| **Node Introspection** | `get_node` (mode='info') | **Mandatory** before creating/updating any node. Inspect exact parameter keys and types. |
+| **Node Schema & Docs** | `get_node` | Fetch structural schema, parameters, default values, and Markdown documentation. |
+| **Credential Discovery** | `n8n_manage_credentials` | Retrieve list of available credentials (action: "list") and schema requirements. |
 | **Credential Discovery** | `get_credential_schema` | Check required fields and authentication schemes for a credential type. |
-| **Workflow Discovery** | `list_workflows` | **Mandatory** before modifying workflows. List all workflows to verify IDs and status. |
-| **Workflow Retrieval** | `get_workflow` | **Mandatory** to fetch active, untruncated JSON before calculating diffs or updating. |
+| **Workflow Discovery** | `n8n_list_workflows` | **Mandatory** before modifying workflows. List all workflows to verify IDs and status. |
+| **Workflow Retrieval** | `n8n_list_workflows` / `n8n_get_workflow` | Fetch existing workflow JSON structures for modification. |
 | **Pre-Flight Validation**| `validate_workflow_schema` | **Mandatory** before committing changes. Catches invalid parameters, ports, or expressions. |
-| **Workflow Creation** | `create_workflow` | Primary tool for scaffolding new workflows. Always pass `"active": false`. |
-| **Workflow Mutation** | `update_workflow` | Primary tool for updating nodes, connections, or settings on existing workflows. |
+| **Workflow Creation** | `n8n_create_workflow` | Primary tool for scaffolding new workflows. Always pass `"active": false`. |
+| **Workflow Mutation** | `n8n_update_full_workflow` | Primary tool for updating nodes, connections, or settings on existing workflows. |
 | **Workflow Activation** | `activate_workflow` | Use to activate workflow once tests and executions succeed. |
 | **Workflow Deactivation**| `deactivate_workflow` | Use to pause or deactivate workflows during maintenance or deprecation. |
-| **Workflow Deletion** | `delete_workflow` | Use to cleanly remove workflows by ID. |
-| **Execution Diagnostics**| `list_executions` | Query execution history filtered by `workflowId` and status (`success`/`error`). |
-| **Execution Diagnostics**| `get_execution` | Retrieve detailed execution trace, node error stacks, and output payloads. |
+| **Workflow Deployment** | `n8n_create_workflow` / `n8n_update_full_workflow` | Deploy or update workflows directly to the server. |
+| **Execution Diagnostics**| `n8n_executions` | Query execution history filtered by `workflowId` and status (`success`/`error`). |
+| **Execution Diagnostics** | `n8n_executions` | Fetch logs and execution traces (action: "list" or "get"). |
 | **Execution Cleanup** | `delete_execution` | Delete individual execution records when needed. |
 
 ---
@@ -109,8 +109,8 @@ graph TD
 ## 3. Operational Execution Protocol (Step-by-Step)
 
 ### Step 1: Introspect Schema & Discover Credentials via MCP
-1. Call `get_node_schema` with the target `nodeType` (e.g. `n8n-nodes-base.if`, `n8n-nodes-base.httpRequest`, `@n8n/n8n-nodes-langchain.lmChatOpenAi`).
-2. Call `list_credentials` to retrieve the relevant credential ID (e.g. `openAiApi` ID `hvK9eAePdrKHSgMD`) to attach to integration nodes without storing plaintext secrets.
+1. Call `get_node` (with `mode="info"`) with the target `nodeType` (e.g. `n8n-nodes-base.if`, `n8n-nodes-base.httpRequest`, `@n8n/n8n-nodes-langchain.lmChatOpenAi`).
+2. Call `list_credentials` (if available, otherwise ask user) to retrieve the relevant credential ID (e.g. `openAiApi` ID `hvK9eAePdrKHSgMD`) to attach to integration nodes without storing plaintext secrets.
 
 ### Step 2: Scaffolding & Canvas Topology Design
 1. Structure nodes with consistent canvas positioning (`x += 220-300`, `y += 140-200`).

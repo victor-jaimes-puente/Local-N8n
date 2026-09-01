@@ -2,4 +2,5 @@
 .agents/mcp_config.json
 mcp_config.json
 .DS_Store
-
+mcp_config*
+/Users/victor/Dev/Local-N8n/.agents/mcp_config.json
