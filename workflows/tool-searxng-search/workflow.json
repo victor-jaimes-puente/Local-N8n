@@ -1,5 +1,13 @@
 {
+  "id": "hk8OViFZWBnveSCF",
   "name": "Tool-SearXNG-Search",
+  "active": true,
+  "activeVersionId": "9b7f798d-a76d-44c4-be5b-d9fd8c339315",
+  "createdAt": "2026-09-01T03:16:34.473Z",
+  "updatedAt": "2026-09-01T03:16:54.322Z",
+  "isArchived": false,
+  "versionId": "9b7f798d-a76d-44c4-be5b-d9fd8c339315",
+  "triggerCount": 0,
   "nodes": [
     {
       "parameters": {
@@ -91,7 +99,123 @@
       ]
     }
   },
+  "nodeGroups": [],
   "settings": {
     "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": null,
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "hk8OViFZWBnveSCF",
+      "projectId": "zeGW8E3sHgkaR4Sr",
+      "createdAt": "2026-09-01T03:16:34.473Z",
+      "updatedAt": "2026-09-01T03:16:34.473Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "9b7f798d-a76d-44c4-be5b-d9fd8c339315",
+    "workflowId": "hk8OViFZWBnveSCF",
+    "nodes": [
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "query"
+              }
+            ]
+          }
+        },
+        "id": "wf-trig-01",
+        "name": "When Executed by Another Workflow",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          240,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "url": "http://searxng:8080/search",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "q",
+                "value": "={{ $json.query || $json.input || \"canyon lake texas levels\" }}"
+              },
+              {
+                "name": "format",
+                "value": "json"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "json"
+              }
+            }
+          }
+        },
+        "id": "wf-http-01",
+        "name": "SearXNG HTTP Request",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          480,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "\nconst data = $input.first().json;\nconst results = (data.results || []).slice(0, 5).map((r, i) => `${i+1}. [${r.title}](${r.url})\\n${r.content}`).join(\"\\n\\n\");\nreturn [{\n  json: {\n    response: results || \"No search results found.\",\n    query: data.query || \"\"\n  }\n}];\n"
+        },
+        "id": "wf-code-01",
+        "name": "Format Search Results",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          720,
+          300
+        ]
+      }
+    ],
+    "connections": {
+      "When Executed by Another Workflow": {
+        "main": [
+          [
+            {
+              "node": "SearXNG HTTP Request",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "SearXNG HTTP Request": {
+        "main": [
+          [
+            {
+              "node": "Format Search Results",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Victor Jaimes-Puente",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-09-01T03:16:54.324Z",
+    "updatedAt": "2026-09-01T03:16:54.324Z"
   }
 }

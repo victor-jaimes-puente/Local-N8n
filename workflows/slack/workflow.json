@@ -1,5 +1,13 @@
 {
+  "id": "8irpSdMtOgDVxsSb",
   "name": "Slack",
+  "active": false,
+  "activeVersionId": null,
+  "createdAt": "2026-09-01T04:31:01.277Z",
+  "updatedAt": "2026-09-01T04:40:01.237Z",
+  "isArchived": false,
+  "versionId": "256d35be-f2ba-45b5-bf99-440e326906ed",
+  "triggerCount": 0,
   "nodes": [
     {
       "parameters": {
@@ -12,7 +20,10 @@
       "name": "Slack Events Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 200],
+      "position": [
+        240,
+        208
+      ],
       "webhookId": "slack-events-webhook"
     },
     {
@@ -21,7 +32,8 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "strict"
+            "typeValidation": "strict",
+            "version": 1
           },
           "conditions": [
             {
@@ -35,13 +47,17 @@
             }
           ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
       "id": "slack-if-challenge",
       "name": "Is URL Verification?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [480, 200]
+      "position": [
+        480,
+        208
+      ]
     },
     {
       "parameters": {
@@ -53,7 +69,10 @@
       "name": "Respond Challenge",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [720, 100]
+      "position": [
+        720,
+        112
+      ]
     },
     {
       "parameters": {
@@ -63,7 +82,10 @@
       "name": "Parse Inbound Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [720, 300]
+      "position": [
+        720,
+        304
+      ]
     },
     {
       "parameters": {
@@ -75,15 +97,24 @@
       "name": "Acknowledge Event",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [960, 300]
+      "position": [
+        960,
+        304
+      ]
     },
     {
       "parameters": {
         "workflowInputs": {
           "values": [
-            { "name": "channel" },
-            { "name": "text" },
-            { "name": "thread_ts" }
+            {
+              "name": "channel"
+            },
+            {
+              "name": "text"
+            },
+            {
+              "name": "thread_ts"
+            }
           ]
         }
       },
@@ -91,7 +122,10 @@
       "name": "When Executed by Another Workflow",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [240, 520]
+      "position": [
+        240,
+        528
+      ]
     },
     {
       "parameters": {},
@@ -99,7 +133,10 @@
       "name": "When clicking \"Test workflow\"",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [240, 700]
+      "position": [
+        240,
+        704
+      ]
     },
     {
       "parameters": {
@@ -109,28 +146,32 @@
       "name": "Prepare Outbound Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [500, 600]
+      "position": [
+        512,
+        608
+      ]
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "post",
+        "authentication": "oAuth2",
         "select": "channel",
         "channelId": {
           "__rl": true,
-          "value": "={{ $json.channel }}",
+          "value": "=all-tiranotech",
           "mode": "name"
         },
         "text": "={{ $json.text }}",
-        "otherOptions": {
-          "threadTs": "={{ $json.thread_ts || undefined }}"
-        }
+        "otherOptions": {}
       },
       "id": "slack-post-message",
       "name": "Slack: Post Message",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.2,
-      "position": [760, 600],
+      "position": [
+        768,
+        608
+      ],
+      "webhookId": "5533119a-8f91-461a-bcd5-8b145da591b4",
       "credentials": {
         "slackOAuth2Api": {
           "id": "aSF0sVdzDzhmMBK3",
@@ -146,7 +187,10 @@
       "name": "Format Send Result",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1020, 600]
+      "position": [
+        1024,
+        608
+      ]
     }
   ],
   "connections": {
@@ -235,7 +279,25 @@
       ]
     }
   },
+  "nodeGroups": [],
   "settings": {
-    "executionOrder": "v1"
-  }
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "8irpSdMtOgDVxsSb",
+      "projectId": "zeGW8E3sHgkaR4Sr",
+      "createdAt": "2026-09-01T04:31:01.277Z",
+      "updatedAt": "2026-09-01T04:31:01.277Z"
+    }
+  ],
+  "activeVersion": null
 }

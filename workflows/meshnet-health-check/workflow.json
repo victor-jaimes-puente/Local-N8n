@@ -1,5 +1,13 @@
 {
+  "id": "XRDcHq3GIEZQKprT",
   "name": "Meshnet-Health-Check",
+  "active": false,
+  "activeVersionId": null,
+  "createdAt": "2026-08-31T22:42:37.214Z",
+  "updatedAt": "2026-08-31T22:42:37.214Z",
+  "isArchived": false,
+  "versionId": "0c51e1fe-b004-4e93-94ec-d547ee46968c",
+  "triggerCount": 0,
   "nodes": [
     {
       "parameters": {
@@ -71,7 +79,22 @@
       ]
     }
   },
+  "nodeGroups": [],
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "staticData": null,
+  "pinData": null,
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "XRDcHq3GIEZQKprT",
+      "projectId": "zeGW8E3sHgkaR4Sr",
+      "createdAt": "2026-08-31T22:42:37.214Z",
+      "updatedAt": "2026-08-31T22:42:37.214Z"
+    }
+  ],
+  "activeVersion": null
 }

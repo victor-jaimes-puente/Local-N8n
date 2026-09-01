@@ -1,5 +1,13 @@
 {
+  "id": "5rRB16PM6Tx07ZB0",
   "name": "AI-TESTING",
+  "active": false,
+  "activeVersionId": null,
+  "createdAt": "2026-08-31T22:53:10.950Z",
+  "updatedAt": "2026-09-01T03:49:57.099Z",
+  "isArchived": false,
+  "versionId": "dbe10910-7b37-4eeb-a649-0bc53668a15a",
+  "triggerCount": 0,
   "nodes": [
     {
       "parameters": {
@@ -114,8 +122,8 @@
       "type": "@n8n/n8n-nodes-langchain.toolCode",
       "typeVersion": 1.1,
       "position": [
-        1008,
-        480
+        992,
+        464
       ]
     },
     {
@@ -198,11 +206,33 @@
           }
         ]
       ]
+    },
+    "Format Test Results": {
+      "main": [
+        []
+      ]
     }
   },
+  "nodeGroups": [],
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "executionTimeout": 600
-  }
+  },
+  "staticData": null,
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "5rRB16PM6Tx07ZB0",
+      "projectId": "zeGW8E3sHgkaR4Sr",
+      "createdAt": "2026-08-31T22:53:10.950Z",
+      "updatedAt": "2026-08-31T22:53:10.950Z"
+    }
+  ],
+  "activeVersion": null
 }
