@@ -46,9 +46,9 @@ Local-N8n/
 │   ├── meshnet-health-check/                # Meshnet HTTP ingress health probe
 │   │   ├── workflow.json                    # Formatted workflow JSON
 │   │   └── README.md                        # Flow topology & test instructions
-│   └── ai-testing/                          # Multi-provider AI inference testing flow
-│       ├── workflow.json                    # Formatted workflow JSON
-│       └── README.md                        # OpenAI-compatible local vs Gemini docs
+│   └── ai-testing/                          # Local AI testing flow with SearXNG web search
+│       ├── workflow.json                    # Formatted workflow JSON (LM Studio + SearXNG tool)
+│       └── README.md                        # Flow topology, search integration & cold load docs
 ├── .agents/                                 # Antigravity IDE customizations & MCP config
 │   ├── mcp_config.json                      # Workspace MCP server configuration
 │   ├── sample_mcp_config.json               # Sanitized MCP configuration template

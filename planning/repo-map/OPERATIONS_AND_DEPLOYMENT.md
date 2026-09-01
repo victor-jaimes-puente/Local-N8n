@@ -264,11 +264,47 @@ curl http://100.64.153.30:1234/v1/models
 
 ### D. Workflow Configuration in n8n
 1. In n8n (`https://n8n.local-n8n.com`), create an **OpenAI API** credential:
-   - **Credential Name**: `Hulk LM Studio`
-   - **API Key**: `lm-studio` (any placeholder token)
-2. Add an **OpenAI Chat Model** (`@n8n/n8n-nodes-langchain.lmChatOpenAi`) node to your workflow:
-   - **Credential**: `Hulk LM Studio`
-   - **Model**: Model name (e.g. `qwen/qwen3-14b` or custom)
+   - **Credential Name**: `OpenAI account` (or `Hulk LM Studio`)
+   - **API Key**: `lm-studio` (or valid token)
+2. Add an **OpenAI Chat Model** (`@n8n/n8n-nodes-langchain.lmChatOpenAi`) node:
+   - **Credential**: `OpenAI account`
+   - **Model**: Model name (e.g. `qwen/qwen3.6-35b-a3b` or `google/gemma-4-26b-a4b-qat`)
    - **Options -> Base URL**: `http://100.64.153.30:1234/v1`
+   - **Timeout**: `360000` (6 minutes for cold model loading)
+
+### E. SearXNG AI Agent Web Search Integration
+To grant local AI agents real-time web search capabilities:
+1. Connect a **Custom Code Tool** (`@n8n/n8n-nodes-langchain.toolCode` v1.1) to the `ai_tool` input of the `AI Agent` node.
+2. Enable explicit input schema (`specifyInputSchema: true`) with JSON Schema:
+   ```json
+   {
+     "type": "object",
+     "properties": {
+       "query": {
+         "type": "string",
+         "description": "The search query string to look up on the web"
+       }
+     },
+     "required": ["query"]
+   }
+   ```
+3. Provide JavaScript execution logic using native async `fetch`:
+   ```javascript
+   const searchTarget = (typeof query !== "undefined" && query) ? query : ((typeof input !== "undefined" && input) ? input : "news");
+   const q = encodeURIComponent(searchTarget);
+
+   try {
+     const response = await fetch(`http://searxng:8080/search?q=${q}&format=json`);
+     const data = await response.json();
+     const results = (data.results || []).slice(0, 5).map((r, i) => `${i+1}. [${r.title}](${r.url})\n${r.content}`).join("\n\n");
+     return results || "No results found.";
+   } catch (err) {
+     return `Error querying SearXNG: ${err.message}`;
+   }
+   ```
+
+### F. Critical LangChain Tool Debugging Rules
+- **Do not use `$fromAI()` inside JavaScript `jsCode`**: `$fromAI()` is an n8n expression macro for UI property fields (e.g. `{{ $fromAI(...) }}`). It does not exist in the JavaScript VM scope. Calling it will throw an unhandled reference exception and cause `NodeOperationError: No execution data available`.
+- **Prefer `toolCode` over `toolHttpRequest` in n8n v2.36.x**: In current n8n 2.x releases, `toolHttpRequest` may throw `The node has a supplyData method but no execute method` when invoked at runtime. `toolCode` with `specifyInputSchema: true` executes reliably and allows clean formatting of search snippets.
 
 

@@ -194,6 +194,12 @@ graph TD
         SandboxAPI <-->|gRPC mTLS| SandboxRunner["sandbox-runner (sysbox)"]
         SandboxRunner -->|Spawns| MicroBox["Isolated Code Sandbox (JS / Python)"]
     end
+
+    subgraph SearchHost["Self-Hosted Search Engine (gateway_net)"]
+        N8NMain -->|HTTP GET /search?q=...&format=json :8080| SearXNG["searxng Container (SearXNG)"]
+        N8NWorker -->|HTTP GET /search?q=...&format=json :8080| SearXNG
+        SearXNG -->|Metasearch Aggregation| SearchEngines["Public Search Engines (Google, Bing, DDG, Wiki)"]
+    end
 ```
 
 1. **Antigravity Model Context Protocol (MCP)**:
@@ -209,7 +215,11 @@ graph TD
    - **Protocol**: OpenAI-compatible REST API (`/v1/chat/completions`, `/v1/models`, `/v1/embeddings`).
    - **Port Forwarding / Interface Binding**: Windows portproxy (`netsh interface portproxy add v4tov4 listenport=1234 listenaddress=0.0.0.0 connectport=1234 connectaddress=127.0.0.1`) forwards incoming Meshnet requests on port `1234` to the local LM Studio instance.
    - **Model Catalog**: Serves models including `qwen/qwen3-14b`, `qwen/qwen3.8-27b`, `qwen/qwen3.5-9b`, `qwen/qwen3.6-35b-a3b`, `google/gemma-4-26b-a4b-qat`, `google/gemma-4-12b-qat`, `text-embedding-nomic-embed-text-v1.5`, and `google/gemma-4-12b`.
-   - **n8n Workflow Integration**: Connects via `@n8n/n8n-nodes-langchain.lmChatOpenAi` / `n8n-nodes-langchain.lmChatOpenAi` node with Base URL set to `http://100.64.153.30:1234/v1` and placeholder credentials (`lm-studio`).
+   - **n8n Workflow Integration**: Connects via `@n8n/n8n-nodes-langchain.lmChatOpenAi` node with Base URL set to `http://100.64.153.30:1234/v1` and OpenAI credential (`hvK9eAePdrKHSgMD`).
+4. **Self-Hosted SearXNG Search Engine**:
+   - Privacy-respecting metasearch engine deployed in `/home/silver-worker/Local-N8n/searxng` on `gateway_net` (`http://searxng:8080`).
+   - Serves structured JSON search results (`search.formats: [html, json]`, `server.limiter: false`).
+   - **AI Agent Tool Architecture**: Integrated into LangChain agents via `@n8n/n8n-nodes-langchain.toolCode` (Custom Code Tool) with explicit JSON Schema (`specifyInputSchema: true`), allowing local models on Hulk to retrieve real-time facts and current news with zero external API fees.
 
 ---
 
@@ -222,6 +232,7 @@ graph TD
   - Meshnet Private IP: `100.116.224.88`
   - Application Workdir: `/home/silver-worker/Local-N8n`
   - Sandbox Workdir: `/home/silver-worker/Local-N8n/sandbox`
+  - SearXNG Workdir: `/home/silver-worker/Local-N8n/searxng`
 - **AI Inference Compute Host (`hulk`)**:
   - Operating System: Windows (Meshnet node)
   - Meshnet Private IP: `100.64.153.30`
@@ -247,11 +258,13 @@ sequenceDiagram
 1. **Zero-Disk Secret Guarantee**:
    - Plaintext credentials and tokens must never be written to `.env` or disk files.
    - The directory `/home/silver-worker/Local-N8n` is bound to Doppler service tokens scoped to `silver-worker/prd`.
-2. **Dual-Stack Host Persistence**:
+2. **Host Boot Persistence Units**:
    - `/etc/systemd/system/local-n8n.service`: Manages Postgres, Redis, n8n, and n8n-worker.
    - `/etc/systemd/system/local-n8n-sandbox.service`: Manages sandbox-api, sandbox-runner, and registry with `After=local-n8n.service`.
+   - `/etc/systemd/system/local-n8n-searxng.service`: Manages SearXNG metasearch service with `After=local-n8n.service`.
 3. **Execution Quarantining**:
    - AI-generated code execution is strictly routed to `http://sandbox-api:3200` and executed inside isolated runner containers. Untrusted code cannot touch host mounts or Postgres data volumes.
 4. **Staging Safety Rule**:
    - Any workflow generated via agent API/MCP must retain `active: false` until validation checks succeed.
+
 
