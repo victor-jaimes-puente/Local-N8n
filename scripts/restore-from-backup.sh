@@ -8,15 +8,20 @@
 
 set -euo pipefail
 
-REMOTE_HOST="${BACKUP_REMOTE_HOST:-silver-worker}"
+REMOTE_HOST="${BACKUP_REMOTE_HOST:-100.116.224.88}"
 REMOTE_USER="${BACKUP_REMOTE_USER:-silver-worker}"
 REMOTE_DIR="${BACKUP_REMOTE_DIR:-/home/silver-worker/Local-N8n}"
 SSH_PORT="${BACKUP_SSH_PORT:-22}"
 CONNECT_TIMEOUT="${BACKUP_CONNECT_TIMEOUT:-15}"
+SSH_KEY="${BACKUP_SSH_KEY:-$HOME/.ssh/id_ed25519}"
 
 BACKUP_ROOT="${BACKUP_DIR:-$HOME/Backups/Local-N8n}"
 SSH_TARGET="${REMOTE_USER}@${REMOTE_HOST}"
 SSH_OPTS=(-o "BatchMode=yes" -o "ConnectTimeout=${CONNECT_TIMEOUT}" -p "${SSH_PORT}")
+
+if [[ -f "${SSH_KEY}" ]]; then
+    SSH_OPTS+=(-i "${SSH_KEY}")
+fi
 
 usage() {
     echo "Usage: $0 [options] <target-file> [optional-target-volume-name]"
