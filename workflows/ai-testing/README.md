@@ -1,6 +1,6 @@
 # Workflow: AI-TESTING
 
-A multi-provider AI evaluation workflow designed to run comparative inference side-by-side between **Local AI (Hulk LM Studio / Qwen / Gemma)** and **Google Gemini** using OpenAI-compatible connectors over NordVPN Meshnet.
+A local AI testing and evaluation workflow connecting **n8n** to **LM Studio on Hulk (`100.64.153.30:1234`)** over private NordVPN Meshnet, augmented with real-time web search capabilities via our self-hosted **SearXNG** engine.
 
 ---
 
@@ -10,9 +10,11 @@ A multi-provider AI evaluation workflow designed to run comparative inference si
 | :--- | :--- |
 | **Workflow Name** | `AI-TESTING` |
 | **Remote ID** | `5rRB16PM6Tx07ZB0` |
-| **Default State** | `active: false` (Manual Trigger Testing Workflow) |
-| **Primary Trigger** | Manual Click (`When clicking 'Test workflow'`) |
+| **Default State** | `active: false` (Manual & Interactive Chat Testing Workflow) |
+| **Input Methods** | 1. **Interactive Chat UI** (`When chat message received`)<br/>2. **Canvas Prompt Input** (`When clicking 'Test workflow'` + Set Node) |
 | **Direct Canvas Link** | [https://n8n.local-n8n.com/workflow/5rRB16PM6Tx07ZB0](https://n8n.local-n8n.com/workflow/5rRB16PM6Tx07ZB0) |
+| **Search Engine** | **SearXNG** (`http://searxng:8080/search?q={query}&format=json`) |
+| **Timeout Allowance** | **6 Minutes** (`timeout: 360000ms`, `executionTimeout: 600s`) for model cold loading into GPU memory (RTX 4070) |
 
 ---
 
@@ -20,58 +22,43 @@ A multi-provider AI evaluation workflow designed to run comparative inference si
 
 ```mermaid
 graph TD
-    Trigger["When clicking 'Test workflow' (Manual Trigger)"] --> InputNode["Test Prompt Input (Set Node)"]
+    ChatTrigger["When chat message received (Interactive Chat Trigger)"] --> AgentNode["AI Agent (LangChain Agent)"]
+    ManualTrigger["When clicking 'Test workflow' (Manual Trigger)"] --> InputNode["Test Prompt Input (Set Node)"]
+    InputNode --> AgentNode
     
-    InputNode --> LocalChain["Local AI Inference Chain (LLM Chain)"]
-    InputNode --> GeminiChain["Google Gemini Inference Chain (LLM Chain)"]
+    LocalModel["Hulk LM Studio Model (Chat Model)<br/>Base URL: http://100.64.153.30:1234/v1<br/>Model: qwen/qwen3.6-35b-a3b / google/gemma-4-26b-a4b-qat<br/>Timeout: 360,000 ms"] -.->|ai_languageModel| AgentNode
     
-    LocalModel["Hulk LM Studio Model (Chat Model)<br/>Base URL: http://100.64.153.30:1234/v1"] -.->|ai_languageModel| LocalChain
-    GeminiModel["Gemini OpenAI-Compatible Model (Chat Model)<br/>Base URL: https://generativelanguage.googleapis.com/v1beta/openai/"] -.->|ai_languageModel| GeminiChain
+    SearXNGTool["SearXNG Web Search (HTTP Tool)<br/>URL: http://searxng:8080/search<br/>Params: q={{$fromAI('query')}}, format=json"] -.->|ai_tool| AgentNode
     
-    LocalChain --> CompareNode["Compare & Format Results (Code Node)"]
-    GeminiChain --> CompareNode
+    AgentNode --> FormatNode["Format Test Results (Code Node)"]
 ```
 
 ---
 
-## 3. Configured Providers
+## 3. How to Input Text & Test the AI Connection
 
-### 1. Local AI Inference (Hulk LM Studio)
-- **Chain**: `Local AI Inference Chain` (`n8n-nodes-langchain.chainLlm`)
-- **Subnode**: `Local OpenAI-Compatible Model` (`n8n-nodes-langchain.lmChatOpenAi`)
-- **Base URL**: `http://100.64.153.30:1234/v1` (Accessible directly across Meshnet tunnel from n8n & workers)
-- **Default Model**: `qwen/qwen3-14b` *(or any loaded model such as `google/gemma-4-26b-a4b-qat`, `qwen/qwen3.8-27b`, etc.)*
-- **Authentication**: Requires placeholder OpenAI credential (e.g. `lm-studio`).
+You can test custom prompts using either of two built-in methods:
 
-### 2. Google Gemini Inference
-- **Chain**: `Google Gemini Inference Chain` (`n8n-nodes-langchain.chainLlm`)
-- **Subnode**: `Gemini OpenAI-Compatible Model` (`n8n-nodes-langchain.lmChatOpenAi`)
-- **Base URL**: `https://generativelanguage.googleapis.com/v1beta/openai/`
-- **Default Model**: `gemini-2.5-flash`
-- **Authentication**: Requires standard OpenAI credential storing your Google AI Studio API key.
+### Method 1: Interactive Chat UI (Recommended)
+1. Open the workflow canvas: [https://n8n.local-n8n.com/workflow/5rRB16PM6Tx07ZB0](https://n8n.local-n8n.com/workflow/5rRB16PM6Tx07ZB0).
+2. Click the **"Chat"** tab/button located in the bottom-right corner of the canvas (or double-click the **When chat message received** node and click *Open Chat*).
+3. Type a web search prompt (e.g., `Search the web for the latest developments in AI today`).
+4. The AI agent will call `SearXNG Web Search`, retrieve live search results, and synthesize a response.
+
+### Method 2: In-Canvas Test Workflow Button
+1. Open the **Test Prompt Input** Set node.
+2. Edit the `prompt` field value with whatever question or prompt you want to send.
+3. Click **"Test workflow"** at the bottom of the canvas.
+4. The **Format Test Results** node will display structured execution output with metadata and timestamps.
 
 ---
 
-## 4. Execution & Output Format
+## 4. Hardware & Cold Load Specifications
 
-When executed, the **Compare & Format Results** node merges outputs into a structured comparison:
-
-```json
-{
-  "benchmark": "AI Inference Provider Comparison",
-  "prompt": "Explain quantum computing in two concise sentences.",
-  "timestamp": "2026-08-31T22:53:10.950Z",
-  "providers": {
-    "local_openai_compatible": {
-      "model": "qwen/qwen3-14b",
-      "endpoint": "http://100.64.153.30:1234/v1",
-      "response": "Quantum computing uses qubits that exist in multiple states simultaneously via superposition. This enables solving certain complex problems exponentially faster than classical computers."
-    },
-    "google_gemini_openai_compatible": {
-      "model": "gemini-2.5-flash",
-      "endpoint": "https://generativelanguage.googleapis.com/v1beta/openai/",
-      "response": "Quantum computing harnesses the principles of quantum mechanics, like superposition and entanglement, to process complex data. This allows quantum computers to solve specialized calculations far beyond the reach of traditional computers."
-    }
-  }
-}
-```
+- **Compute Host**: Hulk (`100.64.153.30:1234`) running LM Studio local server on Nvidia GeForce RTX 4070.
+- **Search Backend**: Local SearXNG container (`http://searxng:8080`) on Docker `gateway_net`.
+- **Cold Load Buffer**: When switching models or executing after an idle state, LM Studio may take up to 2-5 minutes to load weights into VRAM. The workflow is configured with:
+  - Node HTTP Request Timeout: `360,000 ms` (6 minutes)
+  - Workflow Execution Timeout ceiling: `600 seconds` (10 minutes)
+  - Max Retries: `2`
+- **Active Model**: `qwen/qwen3.6-35b-a3b` (or `google/gemma-4-26b-a4b-qat`).

@@ -24,26 +24,30 @@
 | [`workflows/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/README.md) | Markdown | 22 | Workflows directory index and export standards. |
 | [`workflows/meshnet-health-check/workflow.json`](file:///Users/victor/Dev/Local-N8n/workflows/meshnet-health-check/workflow.json) | JSON | 77 | Exported JSON definition for Meshnet-Health-Check workflow. |
 | [`workflows/meshnet-health-check/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/meshnet-health-check/README.md) | Markdown | 67 | Documentation and test guide for Meshnet-Health-Check. |
-| [`workflows/ai-testing/workflow.json`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/workflow.json) | JSON | 214 | Exported JSON definition for AI-TESTING workflow configured with Hulk LM Studio (`http://100.64.153.30:1234/v1`). |
-| [`workflows/ai-testing/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/README.md) | Markdown | 77 | Documentation and architecture for AI-TESTING comparison flow (Hulk LM Studio vs Gemini). |
+| [`workflows/ai-testing/workflow.json`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/workflow.json) | JSON | 181 | Exported JSON definition for AI-TESTING workflow configured with Hulk LM Studio (`http://100.64.153.30:1234/v1`). |
+| [`workflows/ai-testing/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/README.md) | Markdown | 61 | Documentation and architecture for AI-TESTING flow (Interactive Chat & Test Prompt with 6-min cold load tolerance). |
 | [`sandbox/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/sandbox/docker-compose.yaml) | YAML | 103 | Isolated n8n Code Sandbox service Compose stack (`sandbox-api`, `sandbox-runner`, `registry`). |
 | [`sandbox/README.md`](file:///Users/victor/Dev/Local-N8n/sandbox/README.md) | Markdown | 45 | Code sandbox architecture, systemd service guide, and Doppler secrets integration. |
 | [`searxng/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/searxng/docker-compose.yaml) | YAML | 22 | SearXNG metasearch engine Compose definition attached to `gateway_net`. |
 | [`searxng/settings.yml`](file:///Users/victor/Dev/Local-N8n/searxng/settings.yml) | YAML | 15 | SearXNG configuration with JSON API format and disabled rate limiting. |
 | [`searxng/README.md`](file:///Users/victor/Dev/Local-N8n/searxng/README.md) | Markdown | 66 | SearXNG service guide, JSON verification curl, and systemd persistence. |
 | [`planning/Deploying Self-Hosted SearXNG Search Engine/plan.md`](file:///Users/victor/Dev/Local-N8n/planning/Deploying%20Self-Hosted%20SearXNG%20Search%20Engine/plan.md) | Markdown | 150 | Implementation plan and architecture runbook for SearXNG deployment. |
+| [`.agents/skills/n8n-architect/SKILL.md`](file:///Users/victor/Dev/Local-N8n/.agents/skills/n8n-architect/SKILL.md) | Markdown | 169 | n8n Architect skill definition, MCP First protocol, tool hierarchy, and node quick reference. |
+| [`.agents/skills/n8n-architect/resources/expressions-reference.md`](file:///Users/victor/Dev/Local-N8n/.agents/skills/n8n-architect/resources/expressions-reference.md) | Markdown | 142 | Modern n8n v1+ expression syntax guide (Luxon dates, `$json`, `$item`, JMESPath, binary handling). |
+| [`.agents/skills/n8n-architect/resources/core-node-schemas.md`](file:///Users/victor/Dev/Local-N8n/.agents/skills/n8n-architect/resources/core-node-schemas.md) | Markdown | 391 | Production JSON skeletons for If, Switch, Code, HTTP Request, Merge, Aggregate, and ExecuteWorkflow. |
+| [`.agents/skills/n8n-architect/resources/workflow-patterns.md`](file:///Users/victor/Dev/Local-N8n/.agents/skills/n8n-architect/resources/workflow-patterns.md) | Markdown | 195 | Production architectural patterns (Webhook ingest/response, API pagination, Sub-workflows, Local AI). |
 | [`.agents/mcp_config.json`](file:///Users/victor/Dev/Local-N8n/.agents/mcp_config.json) | JSON | 23 | Workspace MCP server configuration targeting Meshnet n8n instance via Doppler runtime wrapper. |
 | [`.agents/sample_mcp_config.json`](file:///Users/victor/Dev/Local-N8n/.agents/sample_mcp_config.json) | JSON | 23 | Sanitized template for Model Context Protocol (MCP) server configuration. |
-| [`AGENTS.md`](file:///Users/victor/Dev/Local-N8n/AGENTS.md) | Markdown | 9 | Root agent guidelines and guardrails for Meshnet n8n workflow management. |
-| [`.agents/rules/n8n-mcp.md`](file:///Users/victor/Dev/Local-N8n/.agents/rules/n8n-mcp.md) | Markdown | 7 | Antigravity workspace customization rules for n8n MCP tool usage. |
+| [`AGENTS.md`](file:///Users/victor/Dev/Local-N8n/AGENTS.md) | Markdown | 11 | Root agent guidelines enforcing MCP Server First and Meshnet n8n guardrails. |
+| [`.agents/rules/n8n-mcp.md`](file:///Users/victor/Dev/Local-N8n/.agents/rules/n8n-mcp.md) | Markdown | 9 | Antigravity workspace customization rules for strict n8n MCP tool usage. |
 | [`mcp_config.json`](file:///Users/victor/Dev/Local-N8n/mcp_config.json) *(Gitignored)* | JSON | 23 | Active MCP server configuration containing credentials (ignored by VCS). |
 | `/etc/systemd/system/local-n8n.service` | Systemd | 24 | Host systemd unit managing n8n core stack boot persistence with Doppler secrets injection. |
 | `/etc/systemd/system/local-n8n-sandbox.service` | Systemd | 24 | Host systemd unit managing sandbox service boot persistence with Doppler secrets injection. |
 | `/etc/systemd/system/local-n8n-searxng.service` | Systemd | 24 | Host systemd unit managing SearXNG service boot persistence with Doppler secrets injection. |
-| [`planning/repo-map/README.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/README.md) | Markdown | 126 | Agent entry point, dual-host architecture summary (Automation & AI Compute), and quick reference index. |
+| [`planning/repo-map/README.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/README.md) | Markdown | 131 | Agent entry point, dual-host architecture summary (Automation & AI Compute), and quick reference index. |
 | [`planning/repo-map/ARCHITECTURE.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ARCHITECTURE.md) | Markdown | 257 | System topology, Mermaid diagrams, Meshnet AI inference layer, systemd boot sequence, and agent safeguards. |
 | [`planning/repo-map/ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md) | Markdown | 84 | Environment variable dictionary, LM Studio endpoint reference, and Doppler runtime injection guide. |
-| [`planning/repo-map/FILE_MANIFEST.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/FILE_MANIFEST.md) | Markdown | 152 | Complete file index, line counts, and deep component analysis (This file). |
+| [`planning/repo-map/FILE_MANIFEST.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/FILE_MANIFEST.md) | Markdown | 162 | Complete file index, line counts, and deep component analysis (This file). |
 | [`planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) | Markdown | 274 | Step-by-step commands, SSH access, LM Studio operations & port forwarding, systemd unit setup, and roadmap status. |
 
 ---
@@ -148,5 +152,11 @@
 - Dedicated compute node running LM Studio with OpenAI-compatible REST server on port `1234`.
 - Proxied over Meshnet via Windows `netsh portproxy` for zero-latency local inference from n8n workflows (`http://100.64.153.30:1234/v1`).
 - Serves quantized local models (Qwen 3, Gemma 4, Nomic text embeddings) with full privacy and zero egress cost.
+
+### R. [`.agents/skills/n8n-architect/`](file:///Users/victor/Dev/Local-N8n/.agents/skills/n8n-architect/) (n8n Workflow Engineering Skill)
+- **`SKILL.md`**: Master Antigravity skill definition, 4-step execution protocol (Introspection &rarr; Topology &rarr; Error Handling &rarr; Diff/Test), and node quick reference table.
+- **`resources/expressions-reference.md`**: Authoritative modern v1+ expression syntax guide covering `$json`, `$item`, `$now`, Luxon datetime formatting, JMESPath querying, and binary data handling.
+- **`resources/core-node-schemas.md`**: Valid JSON skeletons and parameter dictionaries for core routing and integration nodes (If v2.3, Switch v3.4, Code v2, HTTP Request v4.5, Merge v3.2, Aggregate v1, ExecuteWorkflow v1.3, ErrorTrigger v1).
+- **`resources/workflow-patterns.md`**: Standardized production blueprints for Webhook Ingest/Validation/Response, API Pagination, Sub-Workflow Callers, and Local AI Meshnet Inference.
 
 

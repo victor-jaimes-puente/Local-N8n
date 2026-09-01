@@ -52,6 +52,10 @@ Local-N8n/
 ├── .agents/                                 # Antigravity IDE customizations & MCP config
 │   ├── mcp_config.json                      # Workspace MCP server configuration
 │   ├── sample_mcp_config.json               # Sanitized MCP configuration template
+│   ├── skills/
+│   │   └── n8n-architect/                   # n8n Workflow Engineering Skill package
+│   │       ├── SKILL.md                     # Skill operational execution protocol
+│   │       └── resources/                   # Expressions, schemas & workflow patterns
 │   └── rules/
 │       └── n8n-mcp.md                       # Antigravity workspace rules for n8n MCP
 ├── AGENTS.md                                # Root agent guidelines & Meshnet n8n guardrails
@@ -112,6 +116,7 @@ Local-N8n/
 | **Exported Workflows** | [`workflows/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/README.md), [`workflows/meshnet-health-check/`](file:///Users/victor/Dev/Local-N8n/workflows/meshnet-health-check/), [`workflows/ai-testing/`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/) |
 | **MCP Server Config** | [`mcp_config.json`](file:///Users/victor/Dev/Local-N8n/mcp_config.json), [`.agents/mcp_config.json`](file:///Users/victor/Dev/Local-N8n/.agents/mcp_config.json) |
 | **Agent Rules & Guardrails** | [`AGENTS.md`](file:///Users/victor/Dev/Local-N8n/AGENTS.md), [`.agents/rules/n8n-mcp.md`](file:///Users/victor/Dev/Local-N8n/.agents/rules/n8n-mcp.md) |
+| **n8n Architect Skill** | [`.agents/skills/n8n-architect/SKILL.md`](file:///Users/victor/Dev/Local-N8n/.agents/skills/n8n-architect/SKILL.md), [`.agents/skills/n8n-architect/resources/`](file:///Users/victor/Dev/Local-N8n/.agents/skills/n8n-architect/resources/) |
 | **Roadmap & Expansion** | [`planning/roadmmap-1.md`](file:///Users/victor/Dev/Local-N8n/planning/roadmmap-1.md), [`planning/n8n-mcp-antigrvity-roadmap.md`](file:///Users/victor/Dev/Local-N8n/planning/n8n-mcp-antigrvity-roadmap.md) |
 | **WSL 2 & System Tuning** | [`WSL.md`](file:///Users/victor/Dev/Local-N8n/WSL.md), [`DOCKER-WSL.md`](file:///Users/victor/Dev/Local-N8n/DOCKER-WSL.md) |
 

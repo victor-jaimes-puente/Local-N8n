@@ -2,6 +2,20 @@
   "name": "AI-TESTING",
   "nodes": [
     {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        144
+      ],
+      "id": "10101010-0001-4000-8000-000000000008",
+      "name": "When chat message received",
+      "webhookId": "c13b34c5-4998-4255-973d-e60f18d640d2"
+    },
+    {
       "parameters": {},
       "id": "10101010-0001-4000-8000-000000000001",
       "name": "When clicking \"Test workflow\"",
@@ -9,7 +23,7 @@
       "typeVersion": 1,
       "position": [
         240,
-        300
+        368
       ]
     },
     {
@@ -19,13 +33,13 @@
             {
               "id": "prompt-id",
               "name": "prompt",
-              "value": "Explain quantum computing in two concise sentences.",
+              "value": "Search the web for the current Canyon Lake water levels in Texas and summarize in 2 concise sentences.",
               "type": "string"
             },
             {
               "id": "system-id",
               "name": "systemMessage",
-              "value": "You are a helpful, concise AI research assistant.",
+              "value": "You are a helpful AI assistant running locally on Hulk with live web search access.",
               "type": "string"
             }
           ]
@@ -37,105 +51,101 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        460,
-        300
+        464,
+        368
       ]
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "={{ $json.prompt }}",
-        "hasOutputParser": false,
-        "messages": {
-          "messageValues": [
-            {
-              "message": "={{ $json.systemMessage }}",
-              "type": "system"
-            }
-          ]
+        "text": "={{ $json.chatInput || $json.prompt || 'Hello! Test connection.' }}",
+        "options": {
+          "systemMessage": "You are a helpful AI assistant running locally on LM Studio (Hulk). You have access to a SearXNG web search tool (searxng_web_search). When asked about real-time data, current facts, weather, water levels, or recent news, ALWAYS call the searxng_web_search tool to fetch live information before answering."
         }
       },
-      "id": "10101010-0001-4000-8000-000000000003",
-      "name": "Local AI Inference Chain",
-      "type": "n8n-nodes-langchain.chainLlm",
-      "typeVersion": 1.5,
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
       "position": [
-        720,
-        180
-      ]
+        768,
+        240
+      ],
+      "id": "ffe9d70f-e9c2-48e8-863b-baa0be2a66f4",
+      "name": "AI Agent"
     },
     {
       "parameters": {
-        "model": "qwen/qwen3-14b",
+        "model": {
+          "__rl": true,
+          "value": "qwen/qwen3.6-35b-a3b",
+          "mode": "list",
+          "cachedResultName": "qwen/qwen3.6-35b-a3b"
+        },
+        "responsesApiEnabled": false,
         "options": {
           "baseURL": "http://100.64.153.30:1234/v1",
+          "timeout": 360000,
+          "maxRetries": 2,
           "temperature": 0.7
         }
       },
-      "id": "10101010-0001-4000-8000-000000000004",
-      "name": "Local OpenAI-Compatible Model",
-      "type": "n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.2,
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
       "position": [
-        720,
-        380
-      ]
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "={{ $json.prompt }}",
-        "hasOutputParser": false,
-        "messages": {
-          "messageValues": [
-            {
-              "message": "={{ $json.systemMessage }}",
-              "type": "system"
-            }
-          ]
+        768,
+        480
+      ],
+      "id": "70b302be-c910-4703-a97a-8a2c91e94ce5",
+      "name": "Hulk LM Studio Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "hvK9eAePdrKHSgMD",
+          "name": "OpenAI account"
         }
+      }
+    },
+    {
+      "parameters": {
+        "name": "searxng_web_search",
+        "description": "Search the live web using SearXNG for current news, real-time facts, water levels, weather, recent developments, or documentation. Input is a search query string.",
+        "specifyInputSchema": true,
+        "jsonSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"query\": {\n      \"type\": \"string\",\n      \"description\": \"The search query string to look up on the web\"\n    }\n  },\n  \"required\": [\"query\"]\n}",
+        "jsCode": "const searchTarget = (typeof query !== \"undefined\" && query) ? query : ((typeof input !== \"undefined\" && input) ? input : \"canyon lake texas levels\");\nconst q = encodeURIComponent(searchTarget);\n\ntry {\n  const response = await fetch(`http://searxng:8080/search?q=${q}&format=json`);\n  const data = await response.json();\n  const results = (data.results || []).slice(0, 5).map((r, i) => `${i+1}. [${r.title}](${r.url})\\n${r.content}`).join(\"\\n\\n\");\n  return results || \"No results found.\";\n} catch (err) {\n  return `Error querying SearXNG: ${err.message}`;\n}"
       },
-      "id": "10101010-0001-4000-8000-000000000005",
-      "name": "Google Gemini Inference Chain",
-      "type": "n8n-nodes-langchain.chainLlm",
-      "typeVersion": 1.5,
+      "id": "tool-searxng-websearch",
+      "name": "SearXNG Web Search",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
       "position": [
-        720,
-        560
+        976,
+        480
       ]
     },
     {
       "parameters": {
-        "model": "gemini-2.5-flash",
-        "options": {
-          "baseURL": "https://generativelanguage.googleapis.com/v1beta/openai/",
-          "temperature": 0.7
-        }
-      },
-      "id": "10101010-0001-4000-8000-000000000006",
-      "name": "Gemini OpenAI-Compatible Model",
-      "type": "n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.2,
-      "position": [
-        720,
-        760
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "const prompt = $(\"Test Prompt Input\").first().json.prompt;\nconst localResponse = $(\"Local AI Inference Chain\").first().json.text || $(\"Local AI Inference Chain\").first().json;\nconst geminiResponse = $(\"Google Gemini Inference Chain\").first().json.text || $(\"Google Gemini Inference Chain\").first().json;\n\nreturn [{\n  json: {\n    benchmark: \"AI Inference Provider Comparison\",\n    prompt: prompt,\n    timestamp: new Date().toISOString(),\n    providers: {\n      local_openai_compatible: {\n        model: \"qwen/qwen3-14b\",\n        endpoint: \"http://100.64.153.30:1234/v1\",\n        response: localResponse\n      },\n      google_gemini_openai_compatible: {\n        model: \"gemini-2.5-flash\",\n        endpoint: \"https://generativelanguage.googleapis.com/v1beta/openai/\",\n        response: geminiResponse\n      }\n    }\n  }\n}];"
+        "jsCode": "const promptNode = $(\"Test Prompt Input\");\nconst chatNode = $(\"When chat message received\");\nconst inputPrompt = (promptNode && promptNode.isExecuted) ? promptNode.first().json.prompt : ((chatNode && chatNode.isExecuted && chatNode.first().json.chatInput) ? chatNode.first().json.chatInput : \"Manual Test\");\nconst agentResponse = $json.output || $json.text || $json;\n\nreturn [{\n  json: {\n    status: \"success\",\n    provider: \"Hulk LM Studio (Local AI)\",\n    endpoint: \"http://100.64.153.30:1234/v1\",\n    model: \"qwen/qwen3.6-35b-a3b\",\n    inputPrompt: inputPrompt,\n    response: agentResponse,\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
       "id": "10101010-0001-4000-8000-000000000007",
-      "name": "Compare & Format Results",
+      "name": "Format Test Results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1080,
-        360
+        1088,
+        240
       ]
     }
   ],
   "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "When clicking \"Test workflow\"": {
       "main": [
         [
@@ -151,56 +161,40 @@
       "main": [
         [
           {
-            "node": "Local AI Inference Chain",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Google Gemini Inference Chain",
+            "node": "AI Agent",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Local OpenAI-Compatible Model": {
+    "Hulk LM Studio Model": {
       "ai_languageModel": [
         [
           {
-            "node": "Local AI Inference Chain",
+            "node": "AI Agent",
             "type": "ai_languageModel",
             "index": 0
           }
         ]
       ]
     },
-    "Gemini OpenAI-Compatible Model": {
-      "ai_languageModel": [
+    "SearXNG Web Search": {
+      "ai_tool": [
         [
           {
-            "node": "Google Gemini Inference Chain",
-            "type": "ai_languageModel",
+            "node": "AI Agent",
+            "type": "ai_tool",
             "index": 0
           }
         ]
       ]
     },
-    "Local AI Inference Chain": {
+    "AI Agent": {
       "main": [
         [
           {
-            "node": "Compare & Format Results",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Gemini Inference Chain": {
-      "main": [
-        [
-          {
-            "node": "Compare & Format Results",
+            "node": "Format Test Results",
             "type": "main",
             "index": 0
           }
@@ -209,6 +203,8 @@
     }
   },
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "executionTimeout": 600
   }
 }
