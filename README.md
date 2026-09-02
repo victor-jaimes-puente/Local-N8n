@@ -12,10 +12,11 @@ Local-N8n/
 ├── compose.yaml                       # Core Docker Compose definition (n8n, worker, postgres, redis)
 ├── mcp_config.json                    # Antigravity / Claude MCP server connection profile
 ├── caddy/                             # Caddy reverse proxy configurations
+├── docs/                              # Disaster Recovery runbooks and host rebuild guides
 ├── gateway/                           # Standalone Meshnet Caddy gateway Docker Compose stack
 ├── planning/                          # Architectural roadmaps and implementation designs
 ├── sandbox/                           # Execution sandbox configurations
-├── scripts/                           # Local helper scripts (e.g. export-workflows.js)
+├── scripts/                           # Local helpers, backup orchestrators & host state gathering
 ├── searxng/                           # Self-hosted SearXNG search engine settings
 ├── server-scripts/                    # Operational control scripts (start-all, stop-all, status-all)
 ├── systemd/                           # Systemd service unit files for boot persistence
@@ -90,3 +91,8 @@ Located in `server-scripts/`:
 - `./server-scripts/restart-all.sh`: Clean restart of the entire Docker stack with Doppler injection.
 - `./server-scripts/logs.sh`: View real-time logs for n8n, worker, redis, or postgres.
 - `node scripts/export-workflows.js`: Pull all latest workflow definitions from n8n API into version control.
+
+### Automated Backup Strategy
+- **Zero-Trust Mac Pull**: A macOS orchestrator script (`scripts/backup-pull.sh`) connects via Meshnet SSH to pull live PostgreSQL dumps, compressed Docker volumes, and server configuration files.
+- **Host Configuration State (Phase 2)**: Uses `scripts/gather-host-state.sh` (executed via passwordless sudo) to snapshot the Ubuntu environment (APT packages, `/etc`, user dotfiles) for lightweight bare-metal disaster recovery.
+- **Disaster Recovery**: Detailed bare-metal recovery steps are documented in `docs/DR-HOST-REBUILD.md`.
