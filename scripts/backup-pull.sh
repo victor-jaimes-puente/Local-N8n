@@ -180,6 +180,33 @@ rsync -avz --delete \
 log_success "Configuration synchronization complete."
 
 # ------------------------------------------------------------------------------
+# 3.5 Phase 2: Host Configuration State Backup
+# ------------------------------------------------------------------------------
+log_info "Triggering host state gathering on the server..."
+
+HOST_BACKUP_DIR="${BACKUP_ROOT}/host_state"
+mkdir -p "${HOST_BACKUP_DIR}"
+HOST_ARCHIVE_NAME="host-state-${TIMESTAMP}.tar.gz"
+LOCAL_HOST_BACKUP_PATH="${HOST_BACKUP_DIR}/${HOST_ARCHIVE_NAME}"
+SCRIPT_PATH="/opt/scripts/gather-host-state.sh"
+
+ssh "${SSH_OPTS[@]}" "${SSH_TARGET}" "sudo ${SCRIPT_PATH}"
+
+log_info "Pulling host state archive..."
+rsync -avz -e "${SSH_RSYNC_CMD}" \
+    "${SSH_TARGET}:/tmp/host-state-backup.tar.gz" "${LOCAL_HOST_BACKUP_PATH}" >> "${LOG_FILE}" 2>&1
+
+log_info "Cleaning up server archive..."
+ssh "${SSH_OPTS[@]}" "${SSH_TARGET}" "rm -f /tmp/host-state-backup.tar.gz || true"
+
+if [[ -s "${LOCAL_HOST_BACKUP_PATH}" ]]; then
+    HOST_SIZE="$(du -h "${LOCAL_HOST_BACKUP_PATH}" | cut -f1)"
+    log_success "Host state backup pulled successfully (${HOST_SIZE})."
+else
+    log_warn "Host state backup failed or is empty."
+fi
+
+# ------------------------------------------------------------------------------
 # 4. Create Compressed Combined Snapshot & Checksum
 # ------------------------------------------------------------------------------
 ARCHIVE_NAME="local-n8n-backup-${TIMESTAMP}.tar.gz"
@@ -188,6 +215,10 @@ ARCHIVE_PATH="${ARCHIVE_DIR}/${ARCHIVE_NAME}"
 log_info "Creating compressed backup archive: ${ARCHIVE_NAME}..."
 
 TAR_INPUT_ARGS=(-C "${DB_BACKUP_DIR}" "${DUMP_FILENAME}" -C "${CONFIG_BACKUP_DIR}" "latest")
+
+if [[ -s "${LOCAL_HOST_BACKUP_PATH:-}" ]]; then
+    TAR_INPUT_ARGS+=(-C "${HOST_BACKUP_DIR}" "${HOST_ARCHIVE_NAME}")
+fi
 
 for VOL_FILE in "${CURRENT_VOLUME_FILES[@]}"; do
     TAR_INPUT_ARGS+=(-C "${VOLUMES_BACKUP_DIR}" "${VOL_FILE}")
@@ -220,6 +251,11 @@ find "${DB_BACKUP_DIR}" -name "n8n_db_*.dump" -mtime "+${RETENTION_DAYS}" -print
 
 # Prune volume archives older than RETENTION_DAYS
 find "${VOLUMES_BACKUP_DIR}" -name "vol_*.tar.gz" -mtime "+${RETENTION_DAYS}" -print -delete >> "${LOG_FILE}" 2>&1 || true
+
+# Prune host state archives older than RETENTION_DAYS
+if [[ -d "${HOST_BACKUP_DIR:-}" ]]; then
+    find "${HOST_BACKUP_DIR}" -name "host-state-*.tar.gz" -mtime "+${RETENTION_DAYS}" -print -delete >> "${LOG_FILE}" 2>&1 || true
+fi
 
 # Prune log files older than 30 days
 find "${LOG_DIR}" -name "backup_*.log" -mtime +30 -print -delete >> "${LOG_FILE}" 2>&1 || true

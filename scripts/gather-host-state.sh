@@ -34,6 +34,11 @@ echo "Creating tarball..."
 TAR_DEST="/tmp/host-state-backup.tar.gz"
 tar -czf "$TAR_DEST" -C "/tmp" "$(basename "$BACKUP_DIR")"
 
+# Grant the invoking user permission to read and delete the tarball
+if [[ -n "${SUDO_USER:-}" ]]; then
+    chown "$SUDO_USER:$SUDO_USER" "$TAR_DEST"
+fi
+
 echo "Cleaning up temp dir..."
 rm -rf "$BACKUP_DIR"
 
