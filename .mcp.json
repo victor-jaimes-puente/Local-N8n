@@ -1,9 +1,10 @@
 {
   "servers": {
     "meshnet-n8n": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "/Users/victor/Dev/Local-N8n/n8n-mcp/dist/index.js"
+        "-y",
+        "n8n-mcp@latest"
       ],
       "env": {
         "N8N_API_URL": "https://n8n.local-n8n.com",
@@ -15,9 +16,10 @@
   },
   "mcpServers": {
     "meshnet-n8n": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "/Users/victor/Dev/Local-N8n/n8n-mcp/dist/index.js"
+        "-y",
+        "n8n-mcp@latest"
       ],
       "env": {
         "N8N_API_URL": "https://n8n.local-n8n.com",
