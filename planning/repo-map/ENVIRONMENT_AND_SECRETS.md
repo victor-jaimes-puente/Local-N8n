@@ -25,11 +25,13 @@
 | `N8N_HOST` | Host header expected by n8n web server | `compose.yaml` (x-shared) | `${SUBDOMAIN}.${DOMAIN_NAME}` |
 | `N8N_PORT` | Internal HTTP listening port for n8n service | `compose.yaml` (x-shared) | `5678` |
 | `N8N_PROTOCOL` | External protocol scheme for incoming traffic | `compose.yaml` (x-shared) | `https` |
-| `WEBHOOK_URL` | Public webhook callback URL emitted in workflow triggers | `compose.yaml` (x-shared) | `https://${SUBDOMAIN}.${DOMAIN_NAME}/` |
+| `WEBHOOK_URL` | Public webhook callback URL emitted in workflow triggers (legacy) | `compose.yaml` (x-shared) | `https://${SUBDOMAIN}.${DOMAIN_NAME}/` |
+| `N8N_WEBHOOK_URL` | Primary base URL for both test and production webhooks | `compose.yaml` (x-shared) | `https://${SUBDOMAIN}.${DOMAIN_NAME}/` |
+| `N8N_ENABLED_MODULES` | Comma-separated list of enabled modular features | `compose.yaml` (x-shared) | `agents,instance-ai` |
 | `GENERIC_TIMEZONE` | Default timezone for Cron nodes and workflow scheduling | `compose.yaml` (x-shared) | `America/Chicago` |
-| `EXECUTIONS_MODE` | Runtime architecture mode (`regular` vs `queue`) | `compose.yaml` (x-shared) | `queue` |
-| `QUEUE_BULL_REDIS_HOST` | Hostname of Redis instance handling Bull queue | `compose.yaml` (x-shared) | `redis` |
-| `QUEUE_HEALTH_CHECK_ACTIVE` | Active health check validation on Redis Bull queue | `compose.yaml` (x-shared) | `true` |
+| `EXECUTIONS_MODE` | Runtime architecture mode (`regular` vs `queue`) | `compose.yaml` (x-shared) | `regular` *(agents preview mode)* |
+| `QUEUE_BULL_REDIS_HOST` | Hostname of Redis instance handling Bull queue | `compose.yaml` (x-shared) | `redis` *(when in queue mode)* |
+| `QUEUE_HEALTH_CHECK_ACTIVE` | Active health check validation on Redis Bull queue | `compose.yaml` (x-shared) | `true` *(when in queue mode)* |
 | `EXECUTIONS_DATA_PRUNE` | Enables automatic deletion of historical execution data | `compose.yaml` (x-shared) | `true` |
 | `EXECUTIONS_DATA_MAX_AGE` | Maximum age (in hours) before execution history is purged | `compose.yaml` (x-shared) | `168` (7 days) |
 | `EXECUTIONS_DATA_PRUNE_MAX_COUNT` | Hard ceiling for total execution records retained | `compose.yaml` (x-shared) | `50000` |

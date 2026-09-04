@@ -121,11 +121,12 @@ The system enforces strict traffic isolation across multiple network and adapter
 - **Healthcheck**: `redis-cli ping` (interval: 5s, timeout: 5s, retries: 10).
 - **Volume**: `redis_storage:/data`.
 
-### E. `n8n` (Main UI & Webhook Orchestrator)
-- **Image**: `docker.n8n.io/n8nio/n8n`
+### E. `n8n` (Main UI, Webhook Orchestrator & Native Agent Engine)
+- **Image**: `docker.n8n.io/n8nio/n8n:latest`
 - **Restart Policy**: `always`
 - **Port Mapping**: `127.0.0.1:5678:5678` (host local access only, protected from LAN) and proxied via `gateway_net`.
-- **Mode**: `EXECUTIONS_MODE=queue` with Redis backend.
+- **Mode**: `EXECUTIONS_MODE=regular` (switched from `queue` to enable support for native Agents in preview, which currently require single-process regular execution).
+- **Modules Enabled**: `N8N_ENABLED_MODULES=agents,instance-ai` (enables top-level Agents tab, chat connections, RAG, episodic memory, sub-agents, and AI Assistant building).
 - **Data Pruning Guardrails**:
   - `EXECUTIONS_DATA_PRUNE=true`
   - `EXECUTIONS_DATA_MAX_AGE=168` (retains execution logs for 7 days)
@@ -136,13 +137,10 @@ The system enforces strict traffic isolation across multiple network and adapter
 - **Logging Policy**: `json-file` (max-size: 10m, max-file: 3)
 - **Dependencies**: Depends on healthy `redis` and `postgres` containers before booting.
 
-### F. `n8n-worker` (Execution Processing Unit)
-- **Image**: `docker.n8n.io/n8nio/n8n`
-- **Command**: `worker`
-- **Role**: Pulls queued execution jobs from Redis Bull queue, executes workflow steps, and writes results to PostgreSQL.
-- **Scaling**: Horizontally scalable using `docker compose up -d --scale n8n-worker=N`.
-- **Storage**: Shares identical `n8n_storage` and `n8n_local_files` volumes as the main n8n instance.
-- **Dependencies**: Depends on `n8n` main service being up.
+### F. `n8n-worker` (Execution Processing Unit — Paused)
+- **Image**: `docker.n8n.io/n8nio/n8n:latest`
+- **Status**: Commented out / paused while operating in regular execution mode for the native Agents preview.
+- **Role in Queue Mode**: Pulls queued execution jobs from Redis Bull queue, executes workflow steps, and writes results to PostgreSQL. Can be re-enabled once n8n stabilizes queue mode support for agents.
 
 ---
 

@@ -5,5 +5,5 @@
 3. **Deterministic Pre-Flight Validation**: Always run `validate_workflow_schema` prior to creating or modifying workflows.
 4. **Credential Vault Separation**: Never embed raw API tokens, passwords, or secrets into node JSON. Connect workflows to existing Credential IDs retrieved via `list_credentials`.
 5. **Staging / Safe State**: Set `active: false` on all newly scaffolded workflows until validation tests and executions succeed.
-6. **Asynchronous Execution Model**: The production stack operates with `EXECUTIONS_MODE=queue` backed by Redis 6 and `n8n-worker` instances. Do not assume synchronous in-memory execution loops.
+6. **Execution Model**: The production stack operates with `EXECUTIONS_MODE=regular` to support native Agents in preview (`N8N_ENABLED_MODULES=agents,instance-ai`, with `n8n-worker` paused). When queue mode supports standalone agents in future releases, Redis 6 and `n8n-worker` can be resumed.
 7. **Retention Awareness**: Do not retain high-volume binary payloads inside execution data, adhering to the 168-hour / 50,000-execution pruning threshold (`EXECUTIONS_DATA_PRUNE=true`).

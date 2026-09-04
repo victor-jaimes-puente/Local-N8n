@@ -8,7 +8,7 @@
 
 | Path | Type | Lines | Role & Description |
 | :--- | :--- | :---: | :--- |
-| [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml) | YAML | 127 | Primary Docker Compose definition for the scalable n8n queue stack (`postgres`, `redis`, `n8n`, `n8n-worker`, `n8n-mcp`) with loopback-bound n8n UI. |
+| [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml) | YAML | 127 | Primary Docker Compose definition for the n8n stack (`postgres`, `redis`, `n8n`, `n8n-mcp`) configured with native Agents (`N8N_ENABLED_MODULES=agents,instance-ai`) and loopback UI binding. |
 | [`init-data.sh`](file:///Users/victor/Dev/Local-N8n/init-data.sh) | Shell | 15 | PostgreSQL entrypoint initialization script creating non-root application user and granting database schema rights. |
 | [`.env`](file:///Users/victor/Dev/Local-N8n/.env) | Env | 29 | Local offline development environment fallback file. |
 | [`.env-sample`](file:///Users/victor/Dev/Local-N8n/.env-sample) | Env | 29 | Doppler secrets schema reference and sanitized template for production variables. |
@@ -59,10 +59,10 @@
 
 ### A. [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml)
 - **Shared Anchor Block (`x-shared`, L10–L46)**:
-  - Base Image: `docker.n8n.io/n8nio/n8n` with `restart: always`.
+  - Base Image: `docker.n8n.io/n8nio/n8n:latest` with `restart: always`.
   - Database Configuration: Sets `DB_TYPE=postgresdb`, host `postgres:5432`, referencing database `${POSTGRES_DB}` with non-root credentials `${POSTGRES_NON_ROOT_USER}` and `${POSTGRES_NON_ROOT_PASSWORD}`.
-  - Queue Mode: Configures `EXECUTIONS_MODE=queue`, `QUEUE_BULL_REDIS_HOST=redis`, and `QUEUE_HEALTH_CHECK_ACTIVE=true`.
-  - Ingress & Security: Injects `N8N_ENCRYPTION_KEY`, public `WEBHOOK_URL`, `N8N_HOST`, `N8N_PORT=5678`, and `N8N_PROTOCOL=https`.
+  - Execution Architecture & Modules: Configures `EXECUTIONS_MODE=regular` and `N8N_ENABLED_MODULES=agents,instance-ai` to activate the standalone Agents tab, chat connections, episodic memory, RAG, and sub-agent engine during preview.
+  - Ingress & Security: Injects `N8N_ENCRYPTION_KEY`, public `WEBHOOK_URL`, `N8N_WEBHOOK_URL`, `N8N_HOST`, `N8N_PORT=5678`, and `N8N_PROTOCOL=https`.
   - Execution Pruning Guardrails: Enforces `EXECUTIONS_DATA_PRUNE=true`, `EXECUTIONS_DATA_MAX_AGE=168` (7 days), and `EXECUTIONS_DATA_PRUNE_MAX_COUNT=50000`.
   - Volumes: Mounts `n8n_storage:/home/node/.n8n` and `n8n_local_files:/files`.
   - Logging Policy: Restricts container logs using `json-file` driver with `max-size: "10m"` and `max-file: "3"`.
@@ -70,8 +70,8 @@
 - **Services**:
   - `postgres` (L49–L71): Uses `postgres:16`, mounts `db_storage` and `./init-data.sh`, runs healthcheck `pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}`.
   - `redis` (L73–L88): Uses `redis:6-alpine`, mounts `redis_storage`, runs healthcheck `redis-cli ping`.
-  - `n8n` (L90–L97): Main UI & API service, maps host port `127.0.0.1:5678:5678` (loopback only to protect LAN), connects to both `default` and external `gateway_net`.
-  - `n8n-worker` (L99–L104): Executes `command: worker`, depends on `n8n` main service.
+  - `n8n` (L90–L97): Main UI, API & Agent service, maps host port `127.0.0.1:5678:5678` (loopback only to protect LAN), connects to both `default` and external `gateway_net`.
+  - `n8n-worker` (L99–L105): Paused (commented out) while running regular mode for the Agents preview.
   - `n8n-mcp` (L107–L123): Community MCP server bound to `${MESHNET_IP}:3001:3001`.
 - **Networks (L125–L127)**: Declares `gateway_net` as `external: true`.
 
