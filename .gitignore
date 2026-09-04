@@ -1,6 +1,32 @@
+# Environment & Secrets
 .env
-.agents/mcp_config.json
-mcp_config.json
+.env.*
+!.env-sample
+!.env.example
+
+# MCP Client & Server Configs (contain tokens/keys)
+.mcp.json
+.mcp*.json
+!.mcp-sample.json
+mcp_config*.json
+.agents/mcp_config*.json
+.vscode/mcp.json
+
+# Ad-hoc test scripts & scratch files
+call_mcp*.js
+scratch/
+
+# Node & Package Managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Operating System & IDE artifacts
 .DS_Store
-mcp_config*
-/Users/victor/Dev/Local-N8n/.agents/mcp_config.json
+**/.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/

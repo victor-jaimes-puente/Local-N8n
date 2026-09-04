@@ -103,6 +103,24 @@ services:
       - default
       - gateway_net
 
+  # Community MCP Server for n8n via Meshnet
+  n8n-mcp:
+    image: ghcr.io/czlonkowski/n8n-mcp:latest
+    restart: always
+    environment:
+      - N8N_API_URL=${N8N_API_URL}
+      - N8N_API_KEY=${N8N_API_KEY}
+      - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN}
+      - AUTH_TOKEN=${MCP_AUTH_TOKEN}
+      - MCP_MODE=http
+      - PORT=3001
+    ports:
+      # The Docker Interface Bind Trick: Bind exclusively to the Meshnet IP
+      - "${MESHNET_IP}:3001:3001" 
+    networks:
+      - default
+      - gateway_net
+
 networks:
   gateway_net:
     external: true

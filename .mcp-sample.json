@@ -1,0 +1,33 @@
+{
+  "mcpServers": {
+    "meshnet-n8n": {
+      "type": "sse",
+      "url": "http://100.x.x.x:3001/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_MCP_AUTH_TOKEN"
+      }
+    },
+    "meshnet-n8n-stdio": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "n8n-mcp@latest"
+      ],
+      "env": {
+        "N8N_API_URL": "https://n8n.example.com",
+        "N8N_HOST": "https://n8n.example.com",
+        "N8N_API_KEY": "YOUR_N8N_API_KEY",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      }
+    }
+  },
+  "servers": {
+    "meshnet-n8n": {
+      "type": "sse",
+      "url": "http://100.x.x.x:3001/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_MCP_AUTH_TOKEN"
+      }
+    }
+  }
+}
