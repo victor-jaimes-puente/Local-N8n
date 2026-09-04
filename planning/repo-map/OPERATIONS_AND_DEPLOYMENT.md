@@ -307,4 +307,47 @@ To grant local AI agents real-time web search capabilities:
 - **Do not use `$fromAI()` inside JavaScript `jsCode`**: `$fromAI()` is an n8n expression macro for UI property fields (e.g. `{{ $fromAI(...) }}`). It does not exist in the JavaScript VM scope. Calling it will throw an unhandled reference exception and cause `NodeOperationError: No execution data available`.
 - **Prefer `toolCode` over `toolHttpRequest` in n8n v2.36.x**: In current n8n 2.x releases, `toolHttpRequest` may throw `The node has a supplyData method but no execute method` when invoked at runtime. `toolCode` with `specifyInputSchema: true` executes reliably and allows clean formatting of search snippets.
 
+---
+
+## 8. Model Context Protocol (MCP) Server Operations
+
+The stack runs the community `czlonkowski/n8n-mcp` service on the `silver-worker` host, bound exclusively to the NordVPN Meshnet IP (`100.116.224.88:3001`).
+
+### A. Lifecycle Commands (Host Server)
+```bash
+# 1. Deploy/restart n8n-mcp with Doppler secrets
+cd /home/silver-worker/Local-N8n
+doppler run -- docker compose up -d n8n-mcp
+
+# 2. Check container status & health
+docker compose ps n8n-mcp
+
+# 3. Stream container logs
+docker compose logs -f n8n-mcp
+
+# 4. Stop service
+docker compose stop n8n-mcp
+```
+
+### B. Health Verification
+From any authorized Meshnet client:
+```bash
+curl -s http://100.116.224.88:3001/health
+# Expected: {"status":"ok","version":"2.82.1","uptime":...,"timestamp":"..."}
+```
+
+### C. Client Configuration & Management
+1. **Config Template**: Copy [`.mcp-sample.json`](file:///Users/victor/Dev/Local-N8n/.mcp-sample.json) into `~/.gemini/config/mcp_config.json`.
+2. **SSRF Permissive Mode**: Always ensure `"WEBHOOK_SECURITY_MODE": "permissive"` is present in the client environment to permit requests against the `100.116.224.88` Meshnet IP.
+3. **Local CLI Verification Harness**:
+   ```bash
+   node call_mcp.js
+   ```
+4. **Force Restart MCP Process in IDE**:
+   ```bash
+   bash scripts/restart-mcp.sh
+   ```
+   *(Then press `Cmd + Shift + P` -> `Developer: Reload Window` in Antigravity IDE).*
+
+
 

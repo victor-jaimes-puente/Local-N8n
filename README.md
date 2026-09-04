@@ -76,6 +76,101 @@ The infrastructure operates with the following core configurations:
 
 ---
 
+## Model Context Protocol (MCP) Integration
+
+Antigravity IDE and external AI agents interface directly with the private n8n instance using the community [czlonkowski/n8n-mcp](https://github.com/czlonkowski/n8n-mcp) server.
+
+```
+┌───────────────────────────┐         NordVPN Meshnet         ┌────────────────────────────────────────────────────────┐
+│      Developer Mac        │        (100.116.224.88)         │              Ubuntu Host (silver-worker)               │
+│                           │                                 │                                                        │
+│  Antigravity IDE / CLI    │                                 │  Docker Stack (compose.yaml)                           │
+│  ~/.gemini/config/        │                                 │                                                        │
+│    mcp_config.json        │ ──(HTTP/SSE :3001 or stdio)───> │  ┌──────────────────────────────────────────────────┐  │
+│                           │                                 │  │ local-n8n-n8n-mcp-1 (czlonkowski/n8n-mcp:latest) │  │
+│  call_mcp.js (test harness│                                 │  │ - PORT: 3001                                     │  │
+│    using .env secrets)    │                                 │  │ - Bound to: 100.116.224.88:3001                  │  │
+│                           │                                 │  └───────────────┬──────────────────────────────────┘  │
+│                           │                                 │                  │ Internal Gateway / Caddy            │
+│                           │                                 │                  ▼                                     │
+│                           │                                 │  ┌──────────────────────────────────────────────────┐  │
+│                           │                                 │  │ n8n Core API (https://n8n.local-n8n.com)         │  │
+│                           │                                 │  └──────────────────────────────────────────────────┘  │
+└───────────────────────────┘                                 └────────────────────────────────────────────────────────┘
+```
+
+### 1. Server Deployment (`compose.yaml`)
+The MCP container is deployed on the `silver-worker` host and bound strictly to the private Meshnet IP:
+```yaml
+  n8n-mcp:
+    image: ghcr.io/czlonkowski/n8n-mcp:latest
+    restart: always
+    environment:
+      - N8N_API_URL=${N8N_API_URL}
+      - N8N_API_KEY=${N8N_API_KEY}
+      - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN}
+      - AUTH_TOKEN=${MCP_AUTH_TOKEN}
+      - MCP_MODE=http
+      - PORT=3001
+    ports:
+      # Docker Interface Bind Trick: Exclusively bind to the Meshnet adapter
+      - "${MESHNET_IP}:3001:3001"
+    networks:
+      - default
+      - gateway_net
+```
+
+### 2. Doppler Secret Configuration
+All required MCP secrets are managed centrally in Doppler (`silver-worker/prd`):
+- `MESHNET_IP`: Host Meshnet address (`100.116.224.88`).
+- `N8N_API_URL`: n8n ingress endpoint (`https://n8n.local-n8n.com`).
+- `N8N_API_KEY`: n8n Public API key generated under **Settings > n8n API**.
+- `MCP_AUTH_TOKEN`: Shared bearer token protecting the MCP HTTP/SSE endpoints.
+
+### 3. Client IDE Setup (`mcp_config.json`)
+Client configurations use the sanitized template [`.mcp-sample.json`](./.mcp-sample.json).
+
+* **Global Antigravity IDE**: Place in `/Users/victor/.gemini/config/mcp_config.json`:
+```json
+{
+  "mcpServers": {
+    "meshnet-n8n": {
+      "command": "npx",
+      "args": ["-y", "n8n-mcp@latest"],
+      "env": {
+        "N8N_API_URL": "https://n8n.local-n8n.com",
+        "N8N_HOST": "https://n8n.local-n8n.com",
+        "N8N_API_KEY": "<YOUR_N8N_API_KEY>",
+        "WEBHOOK_SECURITY_MODE": "permissive",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      }
+    }
+  }
+}
+```
+> **Critical Setting**: `"WEBHOOK_SECURITY_MODE": "permissive"` is required to prevent `n8n-mcp` SSRF protection from blocking Meshnet/CGNAT (`100.x.x.x`) IP ranges.
+
+### 4. Operational Commands & Testing
+- **Test Server Health**:
+  ```bash
+  curl -s http://100.116.224.88:3001/health
+  ```
+- **Run Standalone JSON-RPC Test Harness**:
+  ```bash
+  node call_mcp.js
+  ```
+- **Restart MCP Server**:
+  ```bash
+  bash scripts/restart-mcp.sh
+  ```
+  *(Then in Antigravity IDE press `Cmd + Shift + P` -> `Developer: Reload Window`).*
+- **View Container Logs**:
+  ```bash
+  ssh silverworker "docker logs -f local-n8n-n8n-mcp-1"
+  ```
+
+---
+
 ## Deployment & Service Control
 
 ### Host Boot Persistence (Systemd Service)

@@ -42,6 +42,11 @@
 | `SEARXNG_SECRET_KEY` | High-entropy secret key securing SearXNG instance | `searxng/` stack, Doppler | *(High-entropy secret token)* |
 | `HULK_LMSTUDIO_BASE_URL` | OpenAI-compatible endpoint for LM Studio LLM inference on Hulk | n8n Workflows / Nodes | `http://100.64.153.30:1234/v1` |
 | `HULK_LMSTUDIO_API_KEY` | Placeholder API key for LM Studio OpenAI credentials in n8n | n8n Credential Vault | `lm-studio` *(any string)* |
+| `MESHNET_IP` | Static IP of silver-worker on NordVPN Meshnet adapter | `compose.yaml`, Doppler | `100.116.224.88` |
+| `N8N_API_URL` | Base URL used by MCP server to connect to n8n Public API | `compose.yaml`, Doppler | `https://n8n.local-n8n.com` |
+| `N8N_API_KEY` | n8n Public API administrative key for MCP operations | `compose.yaml`, Doppler | *(JWT Bearer Token)* |
+| `MCP_AUTH_TOKEN` | Bearer token securing remote MCP SSE/HTTP requests | `compose.yaml`, Doppler | *(Base64 Auth Token)* |
+| `WEBHOOK_SECURITY_MODE` | SSRF protection mode for `n8n-mcp` (allows Meshnet IPs) | `mcp_config.json`, `.env` | `permissive` |
 
 ---
 
@@ -60,10 +65,10 @@ doppler run -- docker compose up -d
 
 **Benefits**:
 - Eliminates accidental credential commits to Git.
-- Centralizes credential rotation for `N8N_ENCRYPTION_KEY`, database passwords, `N8N_MCP_API_KEY`, and `SANDBOX_API_KEY`.
-- Ensures consistency between `n8n` main service and all scaled `n8n-worker` instances.
+- Centralizes credential rotation for `N8N_ENCRYPTION_KEY`, database passwords, `N8N_API_KEY`, `MCP_AUTH_TOKEN`, and `SANDBOX_API_KEY`.
+- Ensures consistency between `n8n` main service, `n8n-worker`, and `n8n-mcp`.
 - **Headless Boot Execution**: The Doppler CLI is bound to the repository directory (`/home/silver-worker/Local-N8n`) using a directory-level service token binding, allowing `local-n8n.service` to inject secrets non-interactively upon host boot without requiring manual user login.
-- **MCP Client Injection**: The Antigravity MCP configuration calls `doppler run --project silver-worker --config prd -- npx -y n8n-mcp`, providing the `N8N_MCP_API_KEY` directly from the secret store without placing tokens in plain text in config files.
+- **MCP Server Injection**: The `n8n-mcp` service pulls `N8N_API_URL`, `N8N_API_KEY`, `MCP_AUTH_TOKEN`, and `MESHNET_IP` automatically at boot via Doppler runtime injection. Local clients connect over stdio (using `~/.gemini/config/mcp_config.json`) or remote Meshnet SSE on port `3001`.
 
 ### Template & Schema: `.env-sample`
 The [`.env-sample`](file:///Users/victor/Dev/Local-N8n/.env-sample) file acts as the formal schema reference for required secrets in Doppler. It is tracked in Git with placeholder values and descriptive comments.

@@ -203,8 +203,9 @@ graph TD
 ```
 
 1. **Antigravity Model Context Protocol (MCP)**:
-   - Antigravity pair programming agents interface directly with the production n8n instance via the `meshnet-n8n` MCP server.
-   - All interactions run through `n8n-mcp` over the encrypted Meshnet gateway (`https://n8n.local-n8n.com`), allowing agents to inspect node schemas (`get_node_schema`), validate active executions (`execute_workflow`), and manage workflows programmatically without exposing raw database credentials.
+   - Antigravity pair programming agents interface with the production n8n instance via the `meshnet-n8n` MCP server running community `czlonkowski/n8n-mcp:latest`.
+   - **Host Interface Binding**: The service runs as `local-n8n-n8n-mcp-1` on the `silver-worker` host, bound exclusively to `100.116.224.88:3001` over NordVPN Meshnet.
+   - **Protocol Support**: Supports both HTTP/SSE (`http://100.116.224.88:3001/mcp`) and local stdio clients with `WEBHOOK_SECURITY_MODE=permissive`, allowing agents to inspect node schemas (`get_node`), validate expressions, manage workflows (`n8n_list_workflows`), and execute health checks (`n8n_health_check`).
 2. **Self-Hosted Isolated Code Sandbox**:
    - For code-execution nodes and AI Assistant tools, n8n dispatches JavaScript/Python code execution to the companion service (`n8n-sandbox-service`) in `/home/silver-worker/Local-N8n/sandbox`.
    - Listens on `http://sandbox-api:3200` attached to `gateway_net` and bound on the host to `127.0.0.1:3200` and `100.116.224.88:3200`.
