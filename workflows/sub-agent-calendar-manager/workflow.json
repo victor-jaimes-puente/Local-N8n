@@ -1,146 +1,193 @@
 {
-  "id": "xFn1G3NIcSn5TnMK",
+  "id": "TNsAnwkOeLrnbk24",
   "name": "sub-agent-calendar-manager",
-  "active": false,
-  "activeVersionId": null,
-  "createdAt": "2026-09-04T07:20:03.581Z",
-  "updatedAt": "2026-09-04T13:58:21.959Z",
-  "isArchived": true,
-  "versionId": "70bfd2f4-830a-462a-9b1e-74e9aee52771",
-  "triggerCount": 0,
+  "active": true,
   "nodes": [
     {
-      "parameters": {},
       "id": "trigger",
       "name": "Execute Workflow Trigger",
-      "type": "n8n-nodes-base.executeWorkflowTrigger",
-      "typeVersion": 1.1,
-      "position": [
-        208,
-        304
-      ]
-    },
-    {
       "parameters": {
-        "promptType": "define",
-        "text": "={{ $json.query }} \n\nContext:\nSlack Channel: {{ $json.slack_channel }}\nReference Time: {{ $json.reference_time || $now.toISO() }}",
-        "options": {
-          "systemMessage": "You are a specialist Task and Calendar Management Agent.\nRules:\n1. All dates and times must be computed relative to the provided reference time and parsed strictly into ISO 8601 strings.\n2. Advance Reminders: If the user requests multiple notifications (e.g., \"1 week and 1 day before\"), compute the discrete timestamp for EACH notification and make a separate insert tool call for each row.\n3. Every inserted row must have status = \"pending\" and the provided slack_channel.\n4. Output strictly according to your structured contract so the calling agent can parse the results. Output ONLY valid JSON, no markdown blocks. Schema:\n{\n  \"status\": \"success\" | \"error\",\n  \"action_performed\": \"create\" | \"list\" | \"cancel\",\n  \"reminders_created\": [...],\n  \"summary\": \"string\",\n  \"error_message\": null\n}"
+        "workflowInputs": {
+          "values": [
+            { "name": "query" },
+            { "name": "slack_channel" },
+            { "name": "reference_time" },
+            { "name": "timezone" }
+          ]
         }
       },
+      "position": [208, 304],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
       "id": "agent",
       "name": "AI Agent",
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a specialist Task and Calendar Management Agent.\nThe reference time for all calculations is: {{ $json.reference_time || $now.toISO() }}.\nThe local timezone for relative time phrasing is: {{ $json.timezone || $now.zoneName || 'UTC-5' }}.\n\nRules:\n1. All relative dates/times (e.g. \"at 9:00 AM\", \"tomorrow at 3pm\", \"in 2 hours\") must be computed using the provided Reference Time and local Timezone, then converted strictly into ISO 8601 UTC strings (e.g. 2026-09-04T12:02:00.000Z).\n2. When creating reminders or appointments:\n   - Calculate absolute ISO timestamps for target_time and notify_time.\n   - For multi-tiered advance alerts (e.g. 1 week before, 1 day before, and event time), compute each discrete timestamp.\n   - You MUST call the create_reminder tool with the 'reminders' parameter containing an array (or JSON array string) of all calculated reminder objects.\n   - Each reminder object must have:\n     - task (string): description of the task\n     - target_time (string, ISO 8601 UTC): event timestamp\n     - notify_time (string, ISO 8601 UTC): exact alert timestamp\n     - offset_label (string): e.g. \"event time\", \"1 week before\", \"1 day before\", \"2 minutes before\"\n     - status: \"pending\"\n     - slack_channel: from context\n3. When listing reminders:\n   - Call list_reminders tool. The tool is automatically scoped to the current slack_channel to preserve privacy across channels.\n4. When cancelling reminders:\n   - Call cancel_reminder tool with the reminder ID to cancel.\n5. Once your tool call is finished and you receive the tool's result, respond with a JSON object:\n{\n  \"status\": \"success\",\n  \"action_performed\": \"create\",\n  \"reminders\": [...],\n  \"summary\": \"string describing what was done\",\n  \"error_message\": null\n}\nDo not wrap in Markdown code blocks."
+        },
+        "promptType": "define",
+        "text": "={{ $json.query }} \n\nContext:\nSlack Channel: {{ $json.slack_channel }}\nReference Time: {{ $json.reference_time || $now.toISO() }}\nTimezone: {{ $json.timezone || $now.zoneName || 'UTC-5' }}"
+      },
+      "position": [432, 304],
       "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 3.1,
-      "position": [
-        432,
-        304
-      ]
+      "typeVersion": 3.1
     },
     {
-      "parameters": {
-        "model": {
-          "__rl": true,
-          "value": "google/gemma-4-e4b",
-          "mode": "list"
-        },
-        "builtInTools": {},
-        "options": {
-          "timeout": 360000
-        }
-      },
-      "id": "model",
-      "name": "Chat Model",
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
-      "position": [
-        432,
-        528
-      ],
       "credentials": {
         "openAiApi": {
           "id": "hvK9eAePdrKHSgMD",
           "name": "OpenAI account"
         }
-      }
-    },
-    {
-      "parameters": {
-        "dataTableId": {
-          "__rl": true,
-          "value": "UfEmiO0qytgmsjE4",
-          "mode": "id"
-        },
-        "options": {}
       },
-      "id": "tool-insert",
-      "name": "Create Reminder Tool",
-      "type": "n8n-nodes-base.dataTableTool",
-      "typeVersion": 1.1,
-      "position": [
-        1088,
-        496
-      ]
+      "id": "model",
+      "name": "Chat Model",
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "google/gemma-4-e4b"
+        },
+        "options": {
+          "maxRetries": 2,
+          "temperature": 0.7,
+          "timeout": 360000
+        },
+        "responsesApiEnabled": false
+      },
+      "position": [432, 528],
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3
     },
     {
+      "id": "tool-batch-create",
+      "name": "Batch Create Reminder Tool",
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
+        "description": "Create one or more reminders in the database in a single call. Accepts an array of reminder objects in the reminders field.",
+        "workflowId": {
           "__rl": true,
-          "value": "UfEmiO0qytgmsjE4",
-          "mode": "id"
+          "mode": "id",
+          "value": "xvcby8WREF4cxTCr"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "reminders": "={{ /* n8n-auto-generated-fromAI-override */ $fromAI('reminders', 'Array of reminder objects. Each item must have task (string), target_time (ISO string), notify_time (ISO string), offset_label (string), status (pending), slack_channel (string)', 'json') }}"
+          }
         }
       },
-      "id": "tool-get",
-      "name": "List Reminders Tool",
-      "type": "n8n-nodes-base.dataTableTool",
-      "typeVersion": 1.1,
-      "position": [
-        848,
-        496
-      ]
+      "position": [640, 528],
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2
     },
     {
+      "id": "tool-list",
+      "name": "List Reminders Tool",
       "parameters": {
-        "operation": "update",
         "dataTableId": {
           "__rl": true,
-          "value": "UfEmiO0qytgmsjE4",
-          "mode": "id"
+          "mode": "id",
+          "value": "UfEmiO0qytgmsjE4"
         },
-        "options": {}
+        "filters": {
+          "conditions": [
+            {
+              "condition": "eq",
+              "keyName": "slack_channel",
+              "keyValue": "={{ $('Execute Workflow Trigger').item.json.slack_channel || '' }}"
+            }
+          ]
+        },
+        "operation": "get",
+        "returnAll": true
       },
-      "id": "tool-update",
-      "name": "Update Reminder Tool",
+      "position": [848, 528],
       "type": "n8n-nodes-base.dataTableTool",
-      "typeVersion": 1.1,
-      "position": [
-        640,
-        544
-      ]
+      "typeVersion": 1.1
     },
     {
+      "id": "tool-cancel",
+      "name": "Cancel Reminder Tool",
       "parameters": {
-        "jsCode": "try {\n  return [{ json: JSON.parse($input.all()[0].json.output) }];\n} catch (e) {\n  return [{ json: { status: 'error', action_performed: null, reminders_created: [], summary: '', error_message: e.message } }];\n}"
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "cancelled"
+          }
+        },
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "UfEmiO0qytgmsjE4"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id', 'The ID of the reminder to cancel', 'number') }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "options": {}
       },
+      "position": [1056, 528],
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1
+    },
+    {
       "id": "parser",
       "name": "Parse JSON Output",
+      "parameters": {
+        "jsCode": "let raw = $input.all()[0]?.json?.output || $input.all()[0]?.json?.text || $input.all()[0]?.json;\n\nif (typeof raw === 'string') {\n  const cleaned = raw.replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```$/i, '').trim();\n  try {\n    return [{ json: JSON.parse(cleaned) }];\n  } catch (e) {\n    return [{ json: { status: 'success', summary: raw, reminders: [] } }];\n  }\n} else if (typeof raw === 'object' && raw !== null) {\n  return [{ json: raw }];\n}\n\nreturn [{ json: { status: 'error', error_message: 'Empty response from agent' } }];"
+      },
+      "position": [704, 304],
       "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        864,
-        304
-      ]
+      "typeVersion": 2
+    },
+    {
+      "id": "5cc76b33-405b-48a9-abc9-8560f042fa02",
+      "name": "Simple Memory",
+      "parameters": {
+        "contextWindowLength": 5,
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Execute Workflow Trigger').item.json.slack_channel || 'calendar-subagent' }}"
+      },
+      "position": [544, 608],
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4
     }
   ],
   "connections": {
-    "Execute Workflow Trigger": {
+    "AI Agent": {
       "main": [
         [
           {
+            "index": 0,
+            "node": "Parse JSON Output",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Batch Create Reminder Tool": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
             "node": "AI Agent",
-            "type": "main",
-            "index": 0
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Cancel Reminder Tool": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "AI Agent",
+            "type": "ai_tool"
           }
         ]
       ]
@@ -149,20 +196,20 @@
       "ai_languageModel": [
         [
           {
+            "index": 0,
             "node": "AI Agent",
-            "type": "ai_languageModel",
-            "index": 0
+            "type": "ai_languageModel"
           }
         ]
       ]
     },
-    "Create Reminder Tool": {
-      "ai_tool": [
+    "Execute Workflow Trigger": {
+      "main": [
         [
           {
+            "index": 0,
             "node": "AI Agent",
-            "type": "ai_tool",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -171,54 +218,27 @@
       "ai_tool": [
         [
           {
+            "index": 0,
             "node": "AI Agent",
-            "type": "ai_tool",
-            "index": 0
+            "type": "ai_tool"
           }
         ]
       ]
     },
-    "Update Reminder Tool": {
-      "ai_tool": [
+    "Simple Memory": {
+      "ai_memory": [
         [
           {
+            "index": 0,
             "node": "AI Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "AI Agent": {
-      "main": [
-        [
-          {
-            "node": "Parse JSON Output",
-            "type": "main",
-            "index": 0
+            "type": "ai_memory"
           }
         ]
       ]
     }
   },
-  "nodeGroups": [],
   "settings": {
     "executionOrder": "v1",
-    "availableInMCP": true,
     "binaryMode": "separate"
-  },
-  "staticData": null,
-  "pinData": {},
-  "meta": null,
-  "tags": [],
-  "shared": [
-    {
-      "role": "workflow:owner",
-      "workflowId": "xFn1G3NIcSn5TnMK",
-      "projectId": "zeGW8E3sHgkaR4Sr",
-      "createdAt": "2026-09-04T07:20:03.581Z",
-      "updatedAt": "2026-09-04T07:20:03.581Z"
-    }
-  ],
-  "activeVersion": null
+  }
 }
