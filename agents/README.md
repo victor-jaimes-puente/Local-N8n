@@ -11,6 +11,7 @@ Native agents decouple assistant identity, model configuration, persistent memor
 | Directory | Agent Name | Remote ID | Model | Integrations | Attached Tools |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | [`tirano/`](./tirano/) | `Tirano` | `OeEDzKbhvVK7aqeT` | `google/gemma-4-e4b` (Hulk) | Slack (`messagingExperience: agent`) | [`Tool-SearXNG-Search`](../workflows/tool-searxng-search/) |
+| [`tirano-gemini/`](./tirano-gemini/) | `tirano-gemini` | `dEeAUYYsM5pxxKH9` | `google/gemini-3.6-flash` (Gemini API) | Slack (`messagingExperience: agent`) | [`Tool-SearXNG-Search`](../workflows/tool-searxng-search/) |
 
 ---
 
@@ -19,6 +20,9 @@ Native agents decouple assistant identity, model configuration, persistent memor
 ```
 agents/
 ├── README.md                      # Agent inventory & architecture map
+├── tirano-gemini/
+│   ├── README.md                  # tirano-gemini operational documentation & specs
+│   └── agent.json                 # Native agent JSON definition & schema
 └── tirano/
     ├── README.md                  # Tirano operational documentation & specs
     └── agent.json                 # Native agent JSON definition & schema

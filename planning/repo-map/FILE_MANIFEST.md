@@ -31,6 +31,8 @@
 | [`agents/README.md`](file:///Users/victor/Dev/Local-N8n/agents/README.md) | Markdown | 30 | Native n8n Agents inventory and architectural standards. |
 | [`agents/tirano/agent.json`](file:///Users/victor/Dev/Local-N8n/agents/tirano/agent.json) | JSON | 95 | Exported native agent definition for Tirano (`OeEDzKbhvVK7aqeT`). |
 | [`agents/tirano/README.md`](file:///Users/victor/Dev/Local-N8n/agents/tirano/README.md) | Markdown | 55 | Specifications, architecture, and Slack directives for native agent Tirano. |
+| [`agents/tirano-gemini/agent.json`](file:///Users/victor/Dev/Local-N8n/agents/tirano-gemini/agent.json) | JSON | 60 | Exported native agent definition for tirano-gemini (`dEeAUYYsM5pxxKH9`). |
+| [`agents/tirano-gemini/README.md`](file:///Users/victor/Dev/Local-N8n/agents/tirano-gemini/README.md) | Markdown | 55 | Specifications, architecture, and Gemini troubleshooting notes for native agent tirano-gemini. |
 | [`sandbox/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/sandbox/docker-compose.yaml) | YAML | 103 | Isolated n8n Code Sandbox service Compose stack (`sandbox-api`, `sandbox-runner`, `registry`). |
 | [`sandbox/README.md`](file:///Users/victor/Dev/Local-N8n/sandbox/README.md) | Markdown | 45 | Code sandbox architecture, systemd service guide, and Doppler secrets integration. |
 | [`searxng/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/searxng/docker-compose.yaml) | YAML | 22 | SearXNG metasearch engine Compose definition attached to `gateway_net`. |
