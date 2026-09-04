@@ -142,16 +142,24 @@ sudo systemctl restart nordvpnd
 nordvpn c
 ```
 
-### Host UFW Firewall Safeguards
-Ubuntu's native UFW must be used as the primary host firewall:
+### Host UFW Firewall Safeguards (Hardened Meshnet Ingress)
+Ubuntu's native UFW must be used as the primary host firewall, scoped strictly to the Meshnet adapter (`nordlynx`):
 ```bash
-# Ensure SSH port 22 is explicitly permitted before enabling UFW
-sudo ufw allow 22/tcp
+# 1. Ensure default deny on incoming traffic, allow outgoing
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
 
-# Enable firewall
+# 2. Allow SSH strictly on the Meshnet interface (nordlynx)
+sudo ufw allow in on nordlynx to any port 22 proto tcp
+
+# 3. If port 22 was previously open to 0.0.0.0, remove the open rule
+sudo ufw delete allow 22/tcp || true
+
+# 4. Enable firewall & reload
 sudo ufw enable
+sudo ufw reload
 
-# Check firewall status
+# 5. Check firewall status
 sudo ufw status verbose
 ```
 

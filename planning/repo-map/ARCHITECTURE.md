@@ -69,11 +69,13 @@ The system enforces strict traffic isolation across multiple network and adapter
 1. **Zero-Trust Meshnet Ingress Layer**:
    - Instead of listening on `0.0.0.0` (which would expose services to the local Wi-Fi / LAN), Caddy binds strictly to the host machine's NordVPN Meshnet static IP addresses (`100.116.224.88` and `100.64.153.30`).
    - Supports both TCP and UDP for port 443 to enable HTTP/3 QUIC acceleration over the VPN mesh.
+   - **Host UFW Firewall Hardening**: The host firewall enforces `default deny incoming`. SSH (port 22) is allowed strictly over the Meshnet virtual interface (`nordlynx`), and `PasswordAuthentication no` is enforced, completely eliminating LAN brute-force risk.
+   - **Docker Port Isolation**: The n8n UI service maps `127.0.0.1:5678:5678`, preventing Docker iptables from publishing port 5678 to the local LAN.
    - The host machine remains completely invisible to unauthenticated LAN devices.
 
 2. **`gateway_net` (Shared External Bridge)**:
    - Created independently via `docker network create gateway_net`.
-   - Shared between the central reverse proxy (`gateway/docker-compose.yaml`) and web-facing frontend services (`n8n` in `compose.yaml`, `lingua`).
+   - Shared between the central reverse proxy (`gateway/docker-compose.yaml`), Cloudflare Tunnel (`cloudflared`), and web-facing frontend services (`n8n` in `compose.yaml`, `lingua`).
    - Allows independent microservices to be started, stopped, or upgraded without recreating proxy containers.
 
 3. **`default` (Isolated Application Bridge)**:
@@ -94,8 +96,17 @@ The system enforces strict traffic isolation across multiple network and adapter
   - `100.64.153.30:80:80`, `100.64.153.30:443:443` (TCP) & `100.64.153.30:443:443/udp` (HTTP/3)
 - **Volumes**: `caddy_data:/data`, `caddy_config:/config`, `./Caddyfile:/etc/caddy/Caddyfile`
 - **Configuration**: Uses internal TLS certificate generation (`local_certs`) and `flush_interval -1` for real-time WebSocket communication with the n8n frontend.
+- **Path-Scoped Public Ingress**: Scopes `webhook.tiranotech.com` exclusively to `/webhook/*` and `/webhook-test/*` (`reverse_proxy n8n:5678`), immediately rejecting all other paths (e.g., UI, REST API, credentials) with HTTP 403 Forbidden.
 
-### B. `postgres` (Relational Database)
+### B. `gateway/cloudflared` (Public Webhook Tunnel)
+- **Image**: `cloudflare/cloudflared:latest`
+- **Restart Policy**: `unless-stopped`
+- **Command**: `tunnel --no-autoupdate run`
+- **Environment**: `TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}` (injected via Doppler)
+- **Network**: `gateway_net`
+- **Role**: Maintains an outbound, encrypted persistent tunnel to Cloudflare Edge for public Slack event ingress (`webhook.tiranotech.com`) with zero inbound router port forwarding.
+
+### C. `postgres` (Relational Database)
 - **Image**: `postgres:16`
 - **Restart Policy**: `always`
 - **Logging Policy**: `json-file` (max-size: 10m, max-file: 3)
@@ -103,17 +114,17 @@ The system enforces strict traffic isolation across multiple network and adapter
 - **Healthcheck**: `pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}` (interval: 5s, timeout: 5s, retries: 10).
 - **Volume**: `db_storage:/var/lib/postgresql/data`.
 
-### C. `redis` (Queue Broker)
+### D. `redis` (Queue Broker)
 - **Image**: `redis:6-alpine`
 - **Restart Policy**: `always`
 - **Logging Policy**: `json-file` (max-size: 10m, max-file: 3)
 - **Healthcheck**: `redis-cli ping` (interval: 5s, timeout: 5s, retries: 10).
 - **Volume**: `redis_storage:/data`.
 
-### D. `n8n` (Main UI & Webhook Orchestrator)
+### E. `n8n` (Main UI & Webhook Orchestrator)
 - **Image**: `docker.n8n.io/n8nio/n8n`
 - **Restart Policy**: `always`
-- **Port Mapping**: `5678:5678` (host local access) and proxied via `gateway_net`.
+- **Port Mapping**: `127.0.0.1:5678:5678` (host local access only, protected from LAN) and proxied via `gateway_net`.
 - **Mode**: `EXECUTIONS_MODE=queue` with Redis backend.
 - **Data Pruning Guardrails**:
   - `EXECUTIONS_DATA_PRUNE=true`
@@ -125,7 +136,7 @@ The system enforces strict traffic isolation across multiple network and adapter
 - **Logging Policy**: `json-file` (max-size: 10m, max-file: 3)
 - **Dependencies**: Depends on healthy `redis` and `postgres` containers before booting.
 
-### E. `n8n-worker` (Execution Processing Unit)
+### F. `n8n-worker` (Execution Processing Unit)
 - **Image**: `docker.n8n.io/n8nio/n8n`
 - **Command**: `worker`
 - **Role**: Pulls queued execution jobs from Redis Bull queue, executes workflow steps, and writes results to PostgreSQL.

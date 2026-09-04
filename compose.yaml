@@ -88,7 +88,7 @@ services:
   n8n:
     <<: *shared
     ports:
-      - "5678:5678"
+      - "127.0.0.1:5678:5678"
     networks:
       - default
       - gateway_net

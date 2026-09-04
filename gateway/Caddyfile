@@ -3,8 +3,20 @@
 }
 
 http://webhook.tiranotech.com, webhook.tiranotech.com {
-    reverse_proxy n8n:5678 {
-      flush_interval -1
+    # Public ingress restricted strictly to webhooks
+    handle /webhook/* {
+        reverse_proxy n8n:5678 {
+            flush_interval -1
+        }
+    }
+    handle /webhook-test/* {
+        reverse_proxy n8n:5678 {
+            flush_interval -1
+        }
+    }
+    # Deny public internet access to the n8n UI, REST API, and credentials
+    handle {
+        respond "Forbidden" 403
     }
 }
 

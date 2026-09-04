@@ -43,6 +43,7 @@
 | `HULK_LMSTUDIO_BASE_URL` | OpenAI-compatible endpoint for LM Studio LLM inference on Hulk | n8n Workflows / Nodes | `http://100.64.153.30:1234/v1` |
 | `HULK_LMSTUDIO_API_KEY` | Placeholder API key for LM Studio OpenAI credentials in n8n | n8n Credential Vault | `lm-studio` *(any string)* |
 | `MESHNET_IP` | Static IP of silver-worker on NordVPN Meshnet adapter | `compose.yaml`, Doppler | `100.116.224.88` |
+| `CLOUDFLARE_TUNNEL_TOKEN` | Outbound tunnel token connecting cloudflared to Cloudflare edge | `gateway/docker-compose.yaml`, Doppler | *(High-entropy secret)* |
 | `N8N_API_URL` | Base URL used by MCP server to connect to n8n Public API | `compose.yaml`, Doppler | `https://n8n.local-n8n.com` |
 | `N8N_API_KEY` | n8n Public API administrative key for MCP operations | `compose.yaml`, Doppler | *(JWT Bearer Token)* |
 | `MCP_AUTH_TOKEN` | Bearer token securing remote MCP SSE/HTTP requests | `compose.yaml`, Doppler | *(Base64 Auth Token)* |

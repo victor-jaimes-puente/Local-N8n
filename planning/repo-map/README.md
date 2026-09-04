@@ -16,7 +16,8 @@ Key Architectural Capabilities:
 - **Host Boot Persistence (`systemd`)**: A host-level unit (`/etc/systemd/system/local-n8n.service`) automatically launches the stack with Doppler runtime injection upon machine reboots, preventing un-injected credential failures.
 - **Scalable Queue Mode**: Separates UI/API handling (`n8n`) from asynchronous execution processing (`n8n-worker`) via RedisV Bull queue, supporting horizontal worker scaling.
 - **Automated Data Pruning & Log Rotation**: Protects storage volumes via built-in n8n execution pruning (`EXECUTIONS_DATA_PRUNE=true`, 168-hour retention, 50k max count) and Docker daemon JSON log rotation (`max-size: 10m`, `max-file: 3`).
-- **Multi-Tenant Gateway Network**: Central external bridge (`gateway_net`) enabling unified reverse proxying for both n8n and companion microservices (such as **Lingua**).
+- **Multi-Tenant Gateway Network**: Central external bridge (`gateway_net`) enabling unified reverse proxying for both n8n and companion microservices (such as **Lingua**), plus outbound Cloudflare Tunnel (`cloudflared`) for Slack webhooks.
+- **Hardened Host & Network Isolation**: Host UFW firewall defaults to `deny incoming`, SSH port 22 is allowed strictly over the Meshnet interface (`nordlynx`) with password auth disabled, n8n UI binds strictly to loopback (`127.0.0.1:5678`), and public Slack webhook ingress is path-restricted with a 403 Forbidden fallback.
 
 ---
 
@@ -93,7 +94,7 @@ Local-N8n/
 - **SearXNG Root**: `/home/silver-worker/Local-N8n/searxng`
 
 ### Connection Method
-- **SSH Transport**: Authenticated via Ed25519 public key cryptography (`ssh -i ~/.ssh/id_ed25519 silver-worker@100.116.224.88` or shell alias `silverworker`).
+- **SSH Transport**: Authenticated via Ed25519 public key cryptography (`ssh -i ~/.ssh/id_ed25519 silver-worker@100.116.224.88` or shell alias `silverworker`). Password authentication is disabled on the host (`/etc/ssh/sshd_config.d/99-hardened.conf`), and UFW restricts incoming port 22 strictly to the `nordlynx` interface.
 - **Zero-Trust Network**: Remote shell access and cross-node LLM inference traffic are routed exclusively over the private NordVPN Meshnet tunnel, inaccessible from public IP ranges or unauthenticated local Wi-Fi.
 
 ### Agent Safeguards & Guardrails

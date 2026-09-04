@@ -8,12 +8,12 @@
 
 | Path | Type | Lines | Role & Description |
 | :--- | :--- | :---: | :--- |
-| [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml) | YAML | 108 | Primary Docker Compose definition for the scalable n8n queue stack (`postgres`, `redis`, `n8n`, `n8n-worker`). |
+| [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml) | YAML | 127 | Primary Docker Compose definition for the scalable n8n queue stack (`postgres`, `redis`, `n8n`, `n8n-worker`, `n8n-mcp`) with loopback-bound n8n UI. |
 | [`init-data.sh`](file:///Users/victor/Dev/Local-N8n/init-data.sh) | Shell | 15 | PostgreSQL entrypoint initialization script creating non-root application user and granting database schema rights. |
 | [`.env`](file:///Users/victor/Dev/Local-N8n/.env) | Env | 29 | Local offline development environment fallback file. |
 | [`.env-sample`](file:///Users/victor/Dev/Local-N8n/.env-sample) | Env | 29 | Doppler secrets schema reference and sanitized template for production variables. |
-| [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml) | YAML | 28 | Standalone Caddy reverse proxy Compose file bound strictly to Meshnet IP adapters on `gateway_net`. |
-| [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile) | Caddy | 14 | Ingress routing rules for `n8n.local-n8n.com` (with WebSocket flush interval) and `lingua.local-n8n.com`. |
+| [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml) | YAML | 32 | Gateway Compose stack running Caddy (Meshnet IP bound) and `cloudflared` tunnel for public Slack ingress on `gateway_net`. |
+| [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile) | Caddy | 32 | Hardened ingress routing rules with path-restricted Slack webhooks (403 fallback) and Meshnet internal routing (`n8n.local-n8n.com`, `lingua...`). |
 | [`caddy/n8n-docker-caddy/caddy_config/Caddyfile`](file:///Users/victor/Dev/Local-N8n/caddy/n8n-docker-caddy/caddy_config/Caddyfile) | Caddy | 15 | Legacy standalone Caddy configuration mapping `n8n.local.test` to `n8n:5678`. |
 | [`README.md`](file:///Users/victor/Dev/Local-N8n/README.md) | Markdown | 139 | Production deployment manual covering NordVPN Meshnet, Doppler injection, systemd boot persistence, LM Studio inference, and troubleshooting. |
 | [`DOCKER-WSL.md`](file:///Users/victor/Dev/Local-N8n/DOCKER-WSL.md) | Markdown | 95 | Detailed integration manual for Docker Desktop and WSL 2 on Windows 11. |
@@ -70,21 +70,23 @@
 - **Services**:
   - `postgres` (L49–L71): Uses `postgres:16`, mounts `db_storage` and `./init-data.sh`, runs healthcheck `pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}`.
   - `redis` (L73–L88): Uses `redis:6-alpine`, mounts `redis_storage`, runs healthcheck `redis-cli ping`.
-  - `n8n` (L90–L97): Main UI & API service, maps host port `5678:5678`, connects to both `default` and external `gateway_net`.
+  - `n8n` (L90–L97): Main UI & API service, maps host port `127.0.0.1:5678:5678` (loopback only to protect LAN), connects to both `default` and external `gateway_net`.
   - `n8n-worker` (L99–L104): Executes `command: worker`, depends on `n8n` main service.
-- **Networks (L106–L108)**: Declares `gateway_net` as `external: true`.
+  - `n8n-mcp` (L107–L123): Community MCP server bound to `${MESHNET_IP}:3001:3001`.
+- **Networks (L125–L127)**: Declares `gateway_net` as `external: true`.
 
 ### B. [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml)
-- Implements the standalone reverse proxy using `caddy:latest` with `restart: unless-stopped`.
-- **Zero-Trust Port Bindings (L8–L13)**:
+- Implements the standalone reverse proxy using `caddy:latest` and the outbound Cloudflare Tunnel using `cloudflare/cloudflared:latest`.
+- **Zero-Trust Port Bindings (L5–L8)**:
   - `100.116.224.88:80:80`, `100.116.224.88:443:443` (TCP) & `100.116.224.88:443:443/udp` (HTTP/3).
-  - `100.64.153.30:80:80`, `100.64.153.30:443:443` (TCP) & `100.64.153.30:443:443/udp` (HTTP/3).
+- **Public Tunnel**: `cloudflared` runs `tunnel --no-autoupdate run` using `CLOUDFLARE_TUNNEL_TOKEN` on `gateway_net` with zero open router ports.
 - **Volumes**: Mounts persistent state `caddy_data:/data`, `caddy_config:/config`, and `./Caddyfile:/etc/caddy/Caddyfile`.
 - **Network**: Connects to external bridge `gateway_net`.
 
 ### C. [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile)
 - Global Block: `local_certs` enables Caddy's internal automated TLS certificate authority.
-- `n8n.local-n8n.com`: Proxies traffic to `n8n:5678` with `flush_interval -1` (critical for real-time WebSocket communication in n8n's visual workflow canvas).
+- `webhook.tiranotech.com`: Hardened public webhook proxy routing `/webhook/*` and `/webhook-test/*` to `n8n:5678`, dropping all other routes with HTTP 403 Forbidden.
+- `n8n.local-n8n.com`: Proxies traffic to `n8n:5678` over Meshnet with `flush_interval -1` (critical for real-time WebSocket communication in n8n's visual workflow canvas).
 - `lingua.local-n8n.com`: Proxies traffic to companion service `lingua:3000`.
 
 ### D. [`init-data.sh`](file:///Users/victor/Dev/Local-N8n/init-data.sh)
