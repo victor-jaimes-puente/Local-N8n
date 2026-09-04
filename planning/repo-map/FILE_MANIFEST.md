@@ -28,6 +28,9 @@
 | [`workflows/ai-testing/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/README.md) | Markdown | 58 | Documentation and architecture for AI-TESTING flow (Interactive Chat & Test Prompt with SearXNG sub-workflow tool & 6-min cold load tolerance). |
 | [`workflows/tool-searxng-search/workflow.json`](file:///Users/victor/Dev/Local-N8n/workflows/tool-searxng-search/workflow.json) | JSON | 55 | Exported JSON definition for Tool-SearXNG-Search sub-workflow (`executeWorkflowTrigger` + `httpRequest` to SearXNG). |
 | [`workflows/tool-searxng-search/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/tool-searxng-search/README.md) | Markdown | 35 | Documentation for Tool-SearXNG-Search sub-workflow tool. |
+| [`agents/README.md`](file:///Users/victor/Dev/Local-N8n/agents/README.md) | Markdown | 30 | Native n8n Agents inventory and architectural standards. |
+| [`agents/tirano/agent.json`](file:///Users/victor/Dev/Local-N8n/agents/tirano/agent.json) | JSON | 95 | Exported native agent definition for Tirano (`OeEDzKbhvVK7aqeT`). |
+| [`agents/tirano/README.md`](file:///Users/victor/Dev/Local-N8n/agents/tirano/README.md) | Markdown | 55 | Specifications, architecture, and Slack directives for native agent Tirano. |
 | [`sandbox/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/sandbox/docker-compose.yaml) | YAML | 103 | Isolated n8n Code Sandbox service Compose stack (`sandbox-api`, `sandbox-runner`, `registry`). |
 | [`sandbox/README.md`](file:///Users/victor/Dev/Local-N8n/sandbox/README.md) | Markdown | 45 | Code sandbox architecture, systemd service guide, and Doppler secrets integration. |
 | [`searxng/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/searxng/docker-compose.yaml) | YAML | 22 | SearXNG metasearch engine Compose definition attached to `gateway_net`. |
@@ -142,6 +145,11 @@
 - **`meshnet-health-check/`**: Webhook probe returning server timestamp, health status, and execution mode over Meshnet tunnel.
 - **`ai-testing/`**: Interactive chat and manual prompt evaluation workflow connecting local LLMs on Hulk (`http://100.64.153.30:1234/v1`) with our self-hosted SearXNG metasearch engine (`http://searxng:8080`) for real-time web search capabilities.
 - **`tool-searxng-search/`**: Dedicated sub-workflow (`Tool-SearXNG-Search` / `hk8OViFZWBnveSCF`) serving as a reusable AI Agent Web Search Tool via SearXNG JSON API.
+- **`slack/`**: Public Slack ingress router with immediate 200 OK acknowledgment and loop filtering.
+- **`slack-ai-agent/`**: Conversational bridge sub-workflow forwarding Slack events to native agent Tirano via `messageAnAgent`.
+
+### M.1 [`agents/`](file:///Users/victor/Dev/Local-N8n/agents/) (Native n8n Agents)
+- **`tirano/`**: Production native Agent (`Tirano` / `OeEDzKbhvVK7aqeT`) running `google/gemma-4-e4b` on Hulk, persistent episodic memory in n8n, Slack channel integration, and `Tool-SearXNG-Search` web browsing tool.
 
 ### N. [`sandbox/`](file:///Users/victor/Dev/Local-N8n/sandbox/) (Code Sandbox Service)
 - **`docker-compose.yaml`**: Official companion stack running `sandbox-api` (port 3200), `sandbox-runner`, and `registry` (port 5050), integrated with `gateway_net` and Doppler secrets (`SANDBOX_API_KEY`).

@@ -2,6 +2,8 @@
 
 This directory contains version-controlled exports of all active, testing, and sub-workflow automations deployed on the **Local-N8n** server.
 
+For standalone native AI agents (n8n 2.35+), see [`../agents/`](../agents/).
+
 ---
 
 ## 1. Workflow Inventory & Repository Map
@@ -11,7 +13,7 @@ This directory contains version-controlled exports of all active, testing, and s
 | [`ai-testing/`](./ai-testing/) | `AI-TESTING` | `5rRB16PM6Tx07ZB0` | `active: false` | Chat / Manual Test | Interactive chat and manual prompt evaluation flow for local LLMs on Hulk (`http://100.64.153.30:1234/v1`) with SearXNG web search. |
 | [`meshnet-health-check/`](./meshnet-health-check/) | `Meshnet-Health-Check` | `XRDcHq3GIEZQKprT` | `active: false` | Webhook (`GET /meshnet-health-check`) | End-to-end health probe validating Meshnet HTTP ingress, Redis Bull queue scheduling, and PostgreSQL recording. |
 | [`slack/`](./slack/) | `Slack` | `8irpSdMtOgDVxsSb` | `active: true` | Webhook (`POST /webhook/slack-events`) | Public Slack ingress router with immediate 200 OK acknowledgment, bot echo loop filtering, and dispatch to `slack-ai-agent`. |
-| [`slack-ai-agent/`](./slack-ai-agent/) | `slack-ai-agent` | `Fq6gdZ5X10eOiCQA` | `active: true` | Execute Workflow Trigger | Conversational AI sub-workflow powered by Hulk LM Studio, Window Buffer Memory (thread-scoped), SearXNG search tool, and Slack reply posting. |
+| [`slack-ai-agent/`](./slack-ai-agent/) | `slack-ai-agent` | `Fq6gdZ5X10eOiCQA` | `active: true` | Execute Workflow Trigger | Conversational AI bridge sub-workflow forwarding Slack messages to native agent **Tirano** via `messageAnAgent`. |
 | [`tool-searxng-search/`](./tool-searxng-search/) | `Tool-SearXNG-Search` | `hk8OViFZWBnveSCF` | `active: true` | Execute Workflow Trigger | Reusable AI Agent Web Search Tool sub-workflow executing live queries against local SearXNG (`http://searxng:8080`). |
 
 ---
@@ -46,4 +48,4 @@ workflows/
    - `workflow.json`: The complete exportable JSON definition.
    - `README.md`: Architectural documentation, trigger endpoints, node details, and sample payloads.
 2. **Credential Safety**: Workflows strictly connect by Credential ID stored in the server's PostgreSQL vault. No tokens, passwords, or secrets are written to disk.
-3. **Queue Mode Compliance**: All workflows operate under asynchronous execution (`EXECUTIONS_MODE=queue` backed by Redis and `n8n-worker`).
+3. **Queue / Regular Mode Compliance**: Sub-workflows and tools are callable synchronously or asynchronously under the active execution mode.

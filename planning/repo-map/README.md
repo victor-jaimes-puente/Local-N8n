@@ -45,11 +45,15 @@ Local-N8n/
 ├── workflows/                               # Exported n8n workflow JSONs & documentation
 │   ├── README.md                            # Workflows directory index
 │   ├── meshnet-health-check/                # Meshnet HTTP ingress health probe
-│   │   ├── workflow.json                    # Formatted workflow JSON
-│   │   └── README.md                        # Flow topology & test instructions
-│   └── ai-testing/                          # Local AI testing flow with SearXNG web search
-│       ├── workflow.json                    # Formatted workflow JSON (LM Studio + SearXNG tool)
-│       └── README.md                        # Flow topology, search integration & cold load docs
+│   ├── ai-testing/                          # Local AI testing flow with SearXNG web search
+│   ├── slack/                               # Public Slack ingress router
+│   ├── slack-ai-agent/                      # Conversational bridge calling native agent Tirano
+│   └── tool-searxng-search/                 # SearXNG web search tool sub-workflow
+├── agents/                                  # Native n8n Agents (n8n 2.35+)
+│   ├── README.md                            # Agents directory index
+│   └── tirano/                              # Native Agent Tirano (Slack + Hulk LM Studio + SearXNG)
+│       ├── agent.json                       # Exported native agent definition & schema
+│       └── README.md                        # Agent architecture, specs & Slack directives
 ├── n8n-mcp/                                 # n8n MCP Server Implementation
 │   ├── src/mcp/server.ts                    # MCP Server initialization & resource handlers
 │   ├── src/mcp/handlers-n8n-manager.ts      # MCP tool execution logic & security rails
