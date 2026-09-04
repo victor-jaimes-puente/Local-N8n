@@ -14,6 +14,7 @@ For standalone native AI agents (n8n 2.35+), see [`../agents/`](../agents/).
 | [`meshnet-health-check/`](./meshnet-health-check/) | `Meshnet-Health-Check` | `XRDcHq3GIEZQKprT` | `active: false` | Webhook (`GET /meshnet-health-check`) | End-to-end health probe validating Meshnet HTTP ingress, Redis Bull queue scheduling, and PostgreSQL recording. |
 | [`slack/`](./slack/) | `Slack` | `8irpSdMtOgDVxsSb` | `active: true` | Webhook (`POST /webhook/slack-events`) | Public Slack ingress router with immediate 200 OK acknowledgment, bot echo loop filtering, and dispatch to `slack-ai-agent`. |
 | [`slack-ai-agent/`](./slack-ai-agent/) | `slack-ai-agent` | `Fq6gdZ5X10eOiCQA` | `active: true` | Execute Workflow Trigger | Conversational AI bridge sub-workflow forwarding Slack messages to native agent **Tirano** via `messageAnAgent`. |
+| [`sub-agent-calendar-manager/`](./sub-agent-calendar-manager/) | `sub-agent-calendar-manager` | `SJqxOcqXZ4WALQDz` | `active: true` | Execute Workflow / Webhook | Autonomous calendar & task sub-agent resolving dynamic relative dates and managing local n8n Data Table reminders. |
 | [`tool-searxng-search/`](./tool-searxng-search/) | `Tool-SearXNG-Search` | `hk8OViFZWBnveSCF` | `active: true` | Execute Workflow Trigger | Reusable AI Agent Web Search Tool sub-workflow executing live queries against local SearXNG (`http://searxng:8080`). |
 
 ---
@@ -34,6 +35,9 @@ workflows/
 │   └── workflow.json                  # Workflow JSON export
 ├── slack-ai-agent/
 │   ├── README.md                      # Threaded conversational AI bot docs
+│   └── workflow.json                  # Workflow JSON export
+├── sub-agent-calendar-manager/
+│   ├── README.md                      # Calendar & task sub-agent docs
 │   └── workflow.json                  # Workflow JSON export
 └── tool-searxng-search/
     ├── README.md                      # Standalone SearXNG tool docs

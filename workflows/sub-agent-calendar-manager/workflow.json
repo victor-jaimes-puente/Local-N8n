@@ -1,0 +1,424 @@
+{
+  "name": "sub-agent-calendar-manager",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "query"
+            },
+            {
+              "name": "slack_channel"
+            },
+            {
+              "name": "reference_time"
+            }
+          ]
+        }
+      },
+      "id": "wf-exec-trigger",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        160
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "wf-manual-trigger",
+      "name": "When clicking \"Test workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "calendar-manager-test",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "wf-webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "query-assign",
+              "name": "query",
+              "value": "={{ $json.body?.query || $json.query || \"Remind me to feed the dogs in 10 minutes\" }}",
+              "type": "string"
+            },
+            {
+              "id": "channel-assign",
+              "name": "slack_channel",
+              "value": "={{ $json.body?.slack_channel || $json.slack_channel || \"C_TEST_ALERTS\" }}",
+              "type": "string"
+            },
+            {
+              "id": "ref-time-assign",
+              "name": "reference_time",
+              "value": "={{ $json.body?.reference_time || $json.reference_time || $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "wf-prep-input",
+      "name": "Prepare Sub-Agent Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "You are a private, precise Calendar and Task Management Sub-Agent.\nYour job is to manage appointments and reminders stored in the local 'reminders' database table.\n\nCRITICAL TIME CONTEXT:\n- The CURRENT YEAR IS 2026.\n- The EXACT Reference Time ($now) is: {{ $('Prepare Sub-Agent Input').item.json.reference_time }}\n- The target Slack Channel is: {{ $('Prepare Sub-Agent Input').item.json.slack_channel }}\n\nWhen calculating relative offsets (such as \"in 10 minutes\", \"tomorrow at 3pm\", \"in 2 hours\"):\n- ALWAYS add the duration to the EXACT Reference Time above (Year 2026).\n- For example, if Reference Time is 2026-09-04T01:30:00Z, \"in 10 minutes\" is 2026-09-04T01:40:00Z.\n- NEVER invent a past date or year (such as 2024 or 2025).\n\nAVAILABLE TOOLS:\n1. create_reminder: Inserts a single reminder row.\n   Parameters:\n   - task: String (e.g. \"feed the dogs\", \"Call Joseph\")\n   - target_time: ISO 8601 string of actual event\n   - notify_time: ISO 8601 string when alert must trigger\n   - offset_label: String (e.g. \"10 minutes before\", \"1 week before\", \"1 day before\", \"event time\")\n   - status: \"pending\"\n   - slack_channel: EXACTLY \"{{ $('Prepare Sub-Agent Input').item.json.slack_channel }}\"\n2. list_reminders: Queries rows from the reminders table.\n3. cancel_reminder: Updates a reminder's status to 'cancelled'.\n\nMULTI-TIERED ADVANCE NOTIFICATIONS (MANDATORY):\nWhen the user specifies advance notifications (e.g. \"On Jan 5 2028 remind me to call Joseph, remind me 1 week and 1 day before\"):\nYou MUST execute multiple discrete create_reminder calls:\n- 1st call for 1 week before: notify_time = 2027-12-29T09:00:00.000Z, offset_label = \"1 week before\"\n- 2nd call for 1 day before: notify_time = 2028-01-04T09:00:00.000Z, offset_label = \"1 day before\"\n- 3rd call for event time: notify_time = 2028-01-05T09:00:00.000Z, offset_label = \"event time\"\nAll calls share the same task, target_time (\"2028-01-05T09:00:00.000Z\"), status (\"pending\"), and slack_channel.\n\nRESPONSE:\nDeliver a direct, concise confirmation summarizing the task name, calculated notify times, and offset labels."
+        }
+      },
+      "id": "wf-ai-agent",
+      "name": "Calendar Sub-Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        760,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gemma-4-26b-a4b-qat",
+          "mode": "id"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "temperature": 0.1,
+          "timeout": 360000,
+          "maxRetries": 2
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "hvK9eAePdrKHSgMD",
+          "name": "OpenAI account"
+        }
+      },
+      "id": "wf-llm-model",
+      "name": "Hulk LM Studio Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        640,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Insert a reminder row into the reminders table. Requires task, target_time, notify_time, offset_label, status='pending', and slack_channel.",
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SYBlBNK8FaTVTDdc"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "task": "={{ $fromAI('task', 'task or event description') }}",
+            "target_time": "={{ $fromAI('target_time', 'ISO 8601 timestamp of the actual event') }}",
+            "notify_time": "={{ $fromAI('notify_time', 'ISO 8601 timestamp for when to alert') }}",
+            "offset_label": "={{ $fromAI('offset_label', 'timing offset label such as 1 week before or 10 minutes before') }}",
+            "status": "={{ $fromAI('status', 'reminder status, default pending', 'string', 'pending') }}",
+            "slack_channel": "={{ $fromAI('slack_channel', 'target slack channel', 'string', $('Prepare Sub-Agent Input').item.json.slack_channel) }}"
+          },
+          "schema": [
+            {
+              "id": "task",
+              "displayName": "task",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "defaultMatch": false
+            },
+            {
+              "id": "target_time",
+              "displayName": "target_time",
+              "type": "dateTime",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "defaultMatch": false
+            },
+            {
+              "id": "notify_time",
+              "displayName": "notify_time",
+              "type": "dateTime",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "defaultMatch": false
+            },
+            {
+              "id": "offset_label",
+              "displayName": "offset_label",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "defaultMatch": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "defaultMatch": false
+            },
+            {
+              "id": "slack_channel",
+              "displayName": "slack_channel",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "defaultMatch": false
+            }
+          ],
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "wf-tool-create",
+      "name": "create_reminder",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        860,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "List all reminders from the reminders table. Returns task, target_time, notify_time, offset_label, status, and slack_channel.",
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SYBlBNK8FaTVTDdc"
+        },
+        "returnAll": true
+      },
+      "id": "wf-tool-list",
+      "name": "list_reminders",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        1060,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Cancel a reminder by its row ID, updating its status to 'cancelled'.",
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SYBlBNK8FaTVTDdc"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $fromAI('row_id', 'The row ID of the reminder to cancel') }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "cancelled"
+          },
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": false,
+              "required": false,
+              "defaultMatch": false
+            }
+          ],
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "wf-tool-cancel",
+      "name": "cancel_reminder",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        1260,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputNode = $('Prepare Sub-Agent Input');\nconst query = (inputNode && inputNode.isExecuted) ? inputNode.first().json.query : ($json.query || '');\nconst agentOutput = $json.output || $json.text || $json;\n\nreturn [{\n  json: {\n    status: \"success\",\n    query: query,\n    response: typeof agentOutput === 'string' ? agentOutput : JSON.stringify(agentOutput),\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "wf-format-response",
+      "name": "Format Sub-Agent Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sub-Agent Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking \"Test workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sub-Agent Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sub-Agent Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Sub-Agent Input": {
+      "main": [
+        [
+          {
+            "node": "Calendar Sub-Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hulk LM Studio Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Calendar Sub-Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_reminder": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Sub-Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "list_reminders": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Sub-Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cancel_reminder": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Sub-Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Sub-Agent": {
+      "main": [
+        [
+          {
+            "node": "Format Sub-Agent Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "executionTimeout": 600
+  }
+}
