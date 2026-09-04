@@ -1,0 +1,22 @@
+
+Phase 1: Central Proxy & Network Backbone
+Establish a standalone reverse proxy to handle all Meshnet routing securely without port conflicts.
+⚬ Sub-Phase 1.1: Shared Infrastructure Topology: Create a dedicated external Docker network (e.g., docker network create gateway_net). This allows both the n8n and Lingua deployment stacks to attach to the proxy independently without requiring a monolithic Compose file.
+⚬ Sub-Phase 1.2: Global Caddy Deployment: Run Caddy as a standalone container bound to host ports 80 and 443. Crucially, mount /data and /config to named Docker volumes. Caddy generates keys for internal routing, and these volumes persist that state across server restarts.
+⚬ Sub-Phase 1.3: Subdomain Routing Strategy: In your global Caddyfile, map n8n.your-meshnet.net to the n8n container alias and lingua.your-meshnet.net to the Next.js frontend. Caddy automatically handles the internal WebSocket proxying required for n8n's UI without additional configuration.
+Phase 2: Private n8n Stack Deployment
+Deploy the automation engine while optimizing the PostgreSQL backend for stability and data retention.
+⚬ Sub-Phase 2.1: Database Network Segregation: Keep the PostgreSQL instance completely isolated. Connect it only to a custom internal network (n8n_backend), and attach the n8n application container to both n8n_backend and the public gateway_net.
+⚬ Sub-Phase 2.2: Dynamic Secrets Injection: Instead of storing plaintext passwords in a .env file on disk, you can pull environment variables into Docker Compose at runtime using the Doppler CLI (e.g., doppler run -- docker compose up -d) to securely inject your database credentials and ENCRYPTION_KEY.
+⚬ Sub-Phase 2.3: Data Pruning Guardrails: Beyond Docker log limits, configure n8n's application-level pruning (EXECUTIONS_DATA_PRUNE=true, EXECUTIONS_DATA_MAX_AGE=168) to automatically delete old workflow execution data before it bloats the database volume.
+Phase 3: CI/CD Pipeline for Lingua Dev via GitHub Actions
+Automate continuous delivery over your private VPN tunnel.
+⚬ Sub-Phase 3.1: Headless SSH over Meshnet: Ensure the Ubuntu host running on the Dell Precision 5480 has OpenSSH installed and port 22 allowed through the local firewall. Since the server sits on Meshnet, use its static 100.x.x.x interface IP as the target host.
+⚬ Sub-Phase 3.2: Automated GHA Workflow: In .github/workflows/deploy.yml, use standard GitHub Secrets for your deployment keys. The workflow should execute a remote SSH action to pull the latest Next.js and Go code, then run docker compose up -d --build --remove-orphans on the target machine.
+⚬ Sub-Phase 3.3: Container Isolation: Just like n8n, Lingua’s MariaDB and LibreTranslate backend instances should sit on a dedicated, isolated internal network (lingua_backend), ensuring the front-facing API only exposes what is strictly necessary to the central proxy.
+Phase 4: Resource Management & Operational Guardrails
+Prevent multi-tenant starvation and ensure the server can recover gracefully from power events.
+⚬ Sub-Phase 4.1: ML Resource Limits: LibreTranslate aggressively consumes memory when loading on-device translation models. Use the Docker deploy.resources.limits block to strictly cap its memory usage (e.g., memory: 2G) and reserve a baseline to prevent OOM (Exit Code 137) system crashes.
+⚬ Sub-Phase 4.2: Healthchecks & Self-Healing: Implement Docker healthcheck directives for all critical backend services. Use pg_isready for Postgres and mysqladmin ping for MariaDB, coupled with restart: unless-stopped so the containers automatically recover when the node reboots.
+⚬ Sub-Phase 4.3: Automated Backups: Meshnet secures data in transit, but not at rest. Implement a lightweight cron job on the host machine that routinely executes pg_dump and mariadb-dump, moving the resulting archives off the main drive.
+Would you like to tackle drafting the global gateway_net and standalone Caddy Compose file first, or focus on mapping out the GitHub Actions deployment workflow?

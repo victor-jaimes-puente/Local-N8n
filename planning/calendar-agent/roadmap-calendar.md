@@ -32,8 +32,8 @@ graph TD
 
 | Phase | Milestone | Scope / Highlights | Status |
 | --- | --- | --- | --- |
-| **Phase 1** | **Local Storage Schema Setup** | Provision `reminders` table in n8n Data Tables with date-indexed fields. | Completed |
-| **Phase 2** | **Sub-Agent Workflow Engineering** | Build sub-agent workflow using Gemma 26B to calculate ISO offsets and persist records. | Completed |
+| **Phase 1** | **Local Storage Schema Setup** | Provision `reminders` table in n8n Data Tables with date-indexed fields. | Ready |
+| **Phase 2** | **Sub-Agent Workflow Engineering** | Build sub-agent workflow using Gemma 26B to calculate ISO offsets and persist records. | Ready |
 | **Phase 3** | **Automated Reminder Poller** | Construct scheduled cron workflow querying due tasks and dispatching Slack messages. | Ready |
 | **Phase 4** | **Tirano Orchestrator Integration** | Attach sub-agent tool to native Tirano configuration with routing instructions. | Ready |
 | **Phase 5** | **End-to-End Validation & Guardrails** | Run verification suites covering relative offsets, multi-tiered dates, and query lookups. | Ready |
