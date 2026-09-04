@@ -35,3 +35,4 @@ agents/
 1. **Zero-Disk Credential Vault Separation**: Agent definitions connect to model credentials and Slack integration credentials by ID (`credential: "hvK9eAePdrKHSgMD"`). No tokens or API keys are stored in plaintext.
 2. **Channel Integration**: Native agents bind directly to communication platforms (such as Slack) via n8n's internal channel adapter, receiving events and dispatching threaded replies autonomously.
 3. **Sub-Workflow Interoperability**: Workflows can invoke native agents dynamically using the `n8n-nodes-base.messageAnAgent` node (see [`workflows/slack-ai-agent/`](../workflows/slack-ai-agent/)).
+4. **Agent Synchronization**: Run `node scripts/export-agents.js` to dump the latest native agent JSON definitions directly from the PostgreSQL backend into `agents/<agent-name>/agent.json`.

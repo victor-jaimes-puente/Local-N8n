@@ -4,9 +4,9 @@
   "active": true,
   "activeVersionId": "80acaa07-60d4-4ea1-a2de-4f5af85fd226",
   "createdAt": "2026-09-01T06:14:40.043Z",
-  "updatedAt": "2026-09-04T05:08:42.052Z",
+  "updatedAt": "2026-09-04T05:31:53.310Z",
   "isArchived": false,
-  "versionId": "eac0d7d6-e4f7-452c-92cd-27ca438e5974",
+  "versionId": "12b1ea32-ecd8-4acd-90db-91ba5452a19b",
   "triggerCount": 0,
   "nodes": [
     {
@@ -43,7 +43,7 @@
       "typeVersion": 3.1,
       "position": [
         560,
-        18.5
+        -5.5
       ],
       "id": "d782a040-d09d-41e2-9cd9-7fb68a4ab723",
       "name": "Message an Agent"

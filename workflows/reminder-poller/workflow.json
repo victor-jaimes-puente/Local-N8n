@@ -1,0 +1,500 @@
+{
+  "id": "aHpvAYW4Jnbf9rte",
+  "name": "reminder-poller",
+  "active": true,
+  "activeVersionId": "7fe36bc7-44cc-4c91-92f7-a1fb27d5749a",
+  "createdAt": "2026-09-04T14:28:38.355Z",
+  "updatedAt": "2026-09-04T14:53:09.217Z",
+  "isArchived": false,
+  "versionId": "7fe36bc7-44cc-4c91-92f7-a1fb27d5749a",
+  "triggerCount": 1,
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        100,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "get-due",
+      "name": "Get Due Reminders",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        300,
+        300
+      ],
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "UfEmiO0qytgmsjE4"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "condition": "eq",
+              "keyName": "status",
+              "keyValue": "pending"
+            },
+            {
+              "condition": "lte",
+              "keyName": "notify_time",
+              "keyValue": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": true
+      }
+    },
+    {
+      "id": "claim-processing",
+      "name": "Claim Rows (Double-Delivery Guard)",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        500,
+        300
+      ],
+      "parameters": {
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "processing"
+          }
+        },
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "UfEmiO0qytgmsjE4"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "condition": "eq",
+              "keyName": "id",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "operation": "update"
+      }
+    },
+    {
+      "id": "slack-alert",
+      "name": "Slack Notification",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        700,
+        300
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.slack_channel }}"
+        },
+        "operation": "post",
+        "resource": "message",
+        "select": "channel",
+        "text": "=⏰ *Reminder:* {{ $json.task }} (_{{ $json.offset_label }}_)"
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "VzU1fxGd9Yg0Y3hM",
+          "name": "TiranoTech - Tirano"
+        }
+      },
+      "webhookId": "ecab5953-e1e8-478f-9d38-e43e488cb6bd"
+    },
+    {
+      "id": "mark-completed",
+      "name": "Mark Completed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        300
+      ],
+      "parameters": {
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "completed"
+          }
+        },
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "UfEmiO0qytgmsjE4"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "condition": "eq",
+              "keyName": "id",
+              "keyValue": "={{ $('Claim Rows (Double-Delivery Guard)').item.json.id }}"
+            }
+          ]
+        },
+        "operation": "update"
+      }
+    },
+    {
+      "id": "ed79e56d-49c4-4161-b48e-3dfb5b2f0ec0",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        100,
+        150
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    }
+  ],
+  "connections": {
+    "Claim Rows (Double-Delivery Guard)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Slack Notification",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Get Due Reminders": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Claim Rows (Double-Delivery Guard)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Mark Completed": {
+      "main": [
+        []
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Get Due Reminders",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Slack Notification": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Mark Completed",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Due Reminders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {
+    "node:Schedule Trigger": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "pinData": null,
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "aHpvAYW4Jnbf9rte",
+      "projectId": "zeGW8E3sHgkaR4Sr",
+      "createdAt": "2026-09-04T14:28:38.355Z",
+      "updatedAt": "2026-09-04T14:28:38.355Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "7fe36bc7-44cc-4c91-92f7-a1fb27d5749a",
+    "workflowId": "aHpvAYW4Jnbf9rte",
+    "nodes": [
+      {
+        "id": "trigger",
+        "name": "Schedule Trigger",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          100,
+          300
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "minutes",
+                "minutesInterval": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "get-due",
+        "name": "Get Due Reminders",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          300,
+          300
+        ],
+        "parameters": {
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "filters": {
+            "conditions": [
+              {
+                "condition": "eq",
+                "keyName": "status",
+                "keyValue": "pending"
+              },
+              {
+                "condition": "lte",
+                "keyName": "notify_time",
+                "keyValue": "={{ $now.toISO() }}"
+              }
+            ]
+          },
+          "matchType": "allConditions",
+          "operation": "get",
+          "returnAll": true
+        }
+      },
+      {
+        "id": "claim-processing",
+        "name": "Claim Rows (Double-Delivery Guard)",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          500,
+          300
+        ],
+        "parameters": {
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "status": "processing"
+            }
+          },
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "filters": {
+            "conditions": [
+              {
+                "condition": "eq",
+                "keyName": "id",
+                "keyValue": "={{ $json.id }}"
+              }
+            ]
+          },
+          "operation": "update"
+        }
+      },
+      {
+        "id": "slack-alert",
+        "name": "Slack Notification",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.2,
+        "position": [
+          700,
+          300
+        ],
+        "parameters": {
+          "authentication": "accessToken",
+          "channelId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $json.slack_channel }}"
+          },
+          "operation": "post",
+          "resource": "message",
+          "select": "channel",
+          "text": "=⏰ *Reminder:* {{ $json.task }} (_{{ $json.offset_label }}_)"
+        },
+        "credentials": {
+          "slackApi": {
+            "id": "VzU1fxGd9Yg0Y3hM",
+            "name": "TiranoTech - Tirano"
+          }
+        },
+        "webhookId": "ecab5953-e1e8-478f-9d38-e43e488cb6bd"
+      },
+      {
+        "id": "mark-completed",
+        "name": "Mark Completed",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          900,
+          300
+        ],
+        "parameters": {
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "status": "completed"
+            }
+          },
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "filters": {
+            "conditions": [
+              {
+                "condition": "eq",
+                "keyName": "id",
+                "keyValue": "={{ $('Claim Rows (Double-Delivery Guard)').item.json.id }}"
+              }
+            ]
+          },
+          "operation": "update"
+        }
+      },
+      {
+        "id": "ed79e56d-49c4-4161-b48e-3dfb5b2f0ec0",
+        "name": "Execute Workflow Trigger",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          100,
+          150
+        ],
+        "parameters": {
+          "inputSource": "passthrough"
+        }
+      }
+    ],
+    "connections": {
+      "Claim Rows (Double-Delivery Guard)": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Slack Notification",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Get Due Reminders": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Claim Rows (Double-Delivery Guard)",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Mark Completed": {
+        "main": [
+          []
+        ]
+      },
+      "Schedule Trigger": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Get Due Reminders",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Slack Notification": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Mark Completed",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Execute Workflow Trigger": {
+        "main": [
+          [
+            {
+              "node": "Get Due Reminders",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Victor Jaimes-Puente",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-09-04T14:53:05.081Z",
+    "updatedAt": "2026-09-04T14:53:05.081Z"
+  }
+}

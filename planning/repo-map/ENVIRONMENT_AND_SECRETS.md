@@ -48,8 +48,21 @@
 | `CLOUDFLARE_TUNNEL_TOKEN` | Outbound tunnel token connecting cloudflared to Cloudflare edge | `gateway/docker-compose.yaml`, Doppler | *(High-entropy secret)* |
 | `N8N_API_URL` | Base URL used by MCP server to connect to n8n Public API | `compose.yaml`, Doppler | `https://n8n.local-n8n.com` |
 | `N8N_API_KEY` | n8n Public API administrative key for MCP operations | `compose.yaml`, Doppler | *(JWT Bearer Token)* |
+| `N8N_MCP_ACCESS_TOKEN` | Access token for n8n instance-level MCP server (Settings -> Instance-level MCP) | `compose.yaml` (x-shared) | `${N8N_API_KEY}` |
 | `MCP_AUTH_TOKEN` | Bearer token securing remote MCP SSE/HTTP requests | `compose.yaml`, Doppler | *(Base64 Auth Token)* |
 | `WEBHOOK_SECURITY_MODE` | SSRF protection mode for `n8n-mcp` (allows Meshnet IPs) | `mcp_config.json`, `.env` | `permissive` |
+
+---
+
+## 2. n8n Internal Credential Vault References
+
+Credentials configured inside n8n's encrypted PostgreSQL vault (referenced strictly by ID in workflow/agent definitions without disk exposure):
+
+| Credential ID | Service Type | Assigned Name | Used By |
+| :--- | :--- | :--- | :--- |
+| `hvK9eAePdrKHSgMD` | `openAiApi` | LM Studio Local LLM | Native Agent Tirano, AI-TESTING flow (pointing to Hulk `http://100.64.153.30:1234/v1`) |
+| `Kc8tChju7TaXdgp2` | `googleGeminiApi` | Google Gemini API | Native Agent tirano-gemini |
+| `VzU1fxGd9Yg0Y3hM` | `slackApi` | Slack Bot Integration | Native Agents (Tirano, tirano-gemini) Slack Messaging Integration |
 
 ---
 

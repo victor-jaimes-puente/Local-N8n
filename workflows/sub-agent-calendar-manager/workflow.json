@@ -1,0 +1,224 @@
+{
+  "id": "xFn1G3NIcSn5TnMK",
+  "name": "sub-agent-calendar-manager",
+  "active": false,
+  "activeVersionId": null,
+  "createdAt": "2026-09-04T07:20:03.581Z",
+  "updatedAt": "2026-09-04T13:58:21.959Z",
+  "isArchived": true,
+  "versionId": "70bfd2f4-830a-462a-9b1e-74e9aee52771",
+  "triggerCount": 0,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }} \n\nContext:\nSlack Channel: {{ $json.slack_channel }}\nReference Time: {{ $json.reference_time || $now.toISO() }}",
+        "options": {
+          "systemMessage": "You are a specialist Task and Calendar Management Agent.\nRules:\n1. All dates and times must be computed relative to the provided reference time and parsed strictly into ISO 8601 strings.\n2. Advance Reminders: If the user requests multiple notifications (e.g., \"1 week and 1 day before\"), compute the discrete timestamp for EACH notification and make a separate insert tool call for each row.\n3. Every inserted row must have status = \"pending\" and the provided slack_channel.\n4. Output strictly according to your structured contract so the calling agent can parse the results. Output ONLY valid JSON, no markdown blocks. Schema:\n{\n  \"status\": \"success\" | \"error\",\n  \"action_performed\": \"create\" | \"list\" | \"cancel\",\n  \"reminders_created\": [...],\n  \"summary\": \"string\",\n  \"error_message\": null\n}"
+        }
+      },
+      "id": "agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        432,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "google/gemma-4-e4b",
+          "mode": "list"
+        },
+        "builtInTools": {},
+        "options": {
+          "timeout": 360000
+        }
+      },
+      "id": "model",
+      "name": "Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        528
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "hvK9eAePdrKHSgMD",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "UfEmiO0qytgmsjE4",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "tool-insert",
+      "name": "Create Reminder Tool",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        1088,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "UfEmiO0qytgmsjE4",
+          "mode": "id"
+        }
+      },
+      "id": "tool-get",
+      "name": "List Reminders Tool",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        848,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "UfEmiO0qytgmsjE4",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "tool-update",
+      "name": "Update Reminder Tool",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  return [{ json: JSON.parse($input.all()[0].json.output) }];\n} catch (e) {\n  return [{ json: { status: 'error', action_performed: null, reminders_created: [], summary: '', error_message: e.message } }];\n}"
+      },
+      "id": "parser",
+      "name": "Parse JSON Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Reminder Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Reminders Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Reminder Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "pinData": {},
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "xFn1G3NIcSn5TnMK",
+      "projectId": "zeGW8E3sHgkaR4Sr",
+      "createdAt": "2026-09-04T07:20:03.581Z",
+      "updatedAt": "2026-09-04T07:20:03.581Z"
+    }
+  ],
+  "activeVersion": null
+}

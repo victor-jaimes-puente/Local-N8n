@@ -206,12 +206,24 @@ Add the following line to the client machine's hosts file:
 
 ---
 
-## 6. Workflows & Code Sandbox Operations
+## 6. Workflows, Agents & Code Sandbox Operations
 
-### Exporting & Versioning Workflows
-Workflows exported from n8n should be saved in `workflows/<workflow-slug>/` following repository standards:
+### Automated Workflow & Agent Synchronization
+Keep local Git definitions in perfect parity with the production n8n server:
 ```bash
-# Workflow directory structure:
+# 1. Export all live workflows from n8n REST API
+node scripts/export-workflows.js
+
+# 2. Export all native n8n agents directly from PostgreSQL
+node scripts/export-agents.js
+
+# 3. Execute zero-trust pull backup over Meshnet SSH tunnel
+bash scripts/backup-pull.sh
+```
+
+### Manual Workflow Directory Structure
+Workflows exported from n8n are versioned in `workflows/<workflow-slug>/`:
+```bash
 # workflows/<workflow-slug>/workflow.json (Pretty-printed JSON definition)
 # workflows/<workflow-slug>/README.md     (Topology, triggers, credential IDs, test instructions)
 ```

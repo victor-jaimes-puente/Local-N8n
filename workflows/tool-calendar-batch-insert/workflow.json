@@ -1,0 +1,259 @@
+{
+  "id": "xvcby8WREF4cxTCr",
+  "name": "tool-calendar-batch-insert",
+  "active": true,
+  "activeVersionId": "35fc2f23-91cd-4c41-8a5a-759123163bae",
+  "createdAt": "2026-09-04T14:27:00.701Z",
+  "updatedAt": "2026-09-04T14:42:42.451Z",
+  "isArchived": false,
+  "versionId": "35fc2f23-91cd-4c41-8a5a-759123163bae",
+  "triggerCount": 0,
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        100,
+        300
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "normalize",
+      "name": "Normalize Reminders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet raw = input.reminders ?? input.query ?? input.input ?? input;\nif (typeof raw === 'string') {\n  try { raw = JSON.parse(raw); } catch(e) {}\n}\nlet reminders = [];\nif (Array.isArray(raw)) {\n  reminders = raw;\n} else if (raw && typeof raw === 'object' && Array.isArray(raw.reminders)) {\n  reminders = raw.reminders;\n} else if (raw && typeof raw === 'object' && raw.task) {\n  reminders = [raw];\n}\n\nif (reminders.length === 0) {\n  throw new Error(\"No reminders provided in input: \" + JSON.stringify(input));\n}\n\nreturn reminders.map(r => ({\n  json: {\n    task: r.task || '',\n    target_time: r.target_time || '',\n    notify_time: r.notify_time || '',\n    offset_label: r.offset_label || 'event time',\n    status: r.status || 'pending',\n    slack_channel: r.slack_channel || ''\n  }\n}));"
+      }
+    },
+    {
+      "id": "insert-rows",
+      "name": "Insert Into Reminders Table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        500,
+        300
+      ],
+      "parameters": {
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "notify_time": "={{ $json.notify_time }}",
+            "offset_label": "={{ $json.offset_label }}",
+            "slack_channel": "={{ $json.slack_channel }}",
+            "status": "={{ $json.status }}",
+            "target_time": "={{ $json.target_time }}",
+            "task": "={{ $json.task }}"
+          }
+        },
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "UfEmiO0qytgmsjE4"
+        },
+        "operation": "insert"
+      }
+    },
+    {
+      "id": "format-output",
+      "name": "Format Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn [{\n  json: {\n    success: true,\n    inserted_count: items.length,\n    reminders: items.map(i => i.json)\n  }\n}];"
+      }
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Normalize Reminders",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Output": {
+      "main": [
+        []
+      ]
+    },
+    "Insert Into Reminders Table": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Output",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Normalize Reminders": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Insert Into Reminders Table",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": null,
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "xvcby8WREF4cxTCr",
+      "projectId": "zeGW8E3sHgkaR4Sr",
+      "createdAt": "2026-09-04T14:27:00.701Z",
+      "updatedAt": "2026-09-04T14:27:00.701Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "35fc2f23-91cd-4c41-8a5a-759123163bae",
+    "workflowId": "xvcby8WREF4cxTCr",
+    "nodes": [
+      {
+        "id": "trigger",
+        "name": "Execute Workflow Trigger",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          100,
+          300
+        ],
+        "parameters": {
+          "inputSource": "passthrough"
+        }
+      },
+      {
+        "id": "normalize",
+        "name": "Normalize Reminders",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          300,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nlet raw = input.reminders ?? input.query ?? input.input ?? input;\nif (typeof raw === 'string') {\n  try { raw = JSON.parse(raw); } catch(e) {}\n}\nlet reminders = [];\nif (Array.isArray(raw)) {\n  reminders = raw;\n} else if (raw && typeof raw === 'object' && Array.isArray(raw.reminders)) {\n  reminders = raw.reminders;\n} else if (raw && typeof raw === 'object' && raw.task) {\n  reminders = [raw];\n}\n\nif (reminders.length === 0) {\n  throw new Error(\"No reminders provided in input: \" + JSON.stringify(input));\n}\n\nreturn reminders.map(r => ({\n  json: {\n    task: r.task || '',\n    target_time: r.target_time || '',\n    notify_time: r.notify_time || '',\n    offset_label: r.offset_label || 'event time',\n    status: r.status || 'pending',\n    slack_channel: r.slack_channel || ''\n  }\n}));"
+        }
+      },
+      {
+        "id": "insert-rows",
+        "name": "Insert Into Reminders Table",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          500,
+          300
+        ],
+        "parameters": {
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "notify_time": "={{ $json.notify_time }}",
+              "offset_label": "={{ $json.offset_label }}",
+              "slack_channel": "={{ $json.slack_channel }}",
+              "status": "={{ $json.status }}",
+              "target_time": "={{ $json.target_time }}",
+              "task": "={{ $json.task }}"
+            }
+          },
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "operation": "insert"
+        }
+      },
+      {
+        "id": "format-output",
+        "name": "Format Output",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          700,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const items = $input.all();\nreturn [{\n  json: {\n    success: true,\n    inserted_count: items.length,\n    reminders: items.map(i => i.json)\n  }\n}];"
+        }
+      }
+    ],
+    "connections": {
+      "Execute Workflow Trigger": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Normalize Reminders",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Format Output": {
+        "main": [
+          []
+        ]
+      },
+      "Insert Into Reminders Table": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Format Output",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Normalize Reminders": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Insert Into Reminders Table",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Victor Jaimes-Puente",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-09-04T14:42:42.453Z",
+    "updatedAt": "2026-09-04T14:42:42.453Z"
+  }
+}

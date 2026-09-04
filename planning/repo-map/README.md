@@ -43,21 +43,30 @@ Local-N8n/
 │   ├── settings.yml                         # SearXNG config (JSON format enabled)
 │   └── README.md                            # Service lifecycle & systemd unit guide
 ├── workflows/                               # Exported n8n workflow JSONs & documentation
-│   ├── README.md                            # Workflows directory index
+│   ├── README.md                            # Workflows directory index & Data Tables inventory
 │   ├── meshnet-health-check/                # Meshnet HTTP ingress health probe
 │   ├── ai-testing/                          # Local AI testing flow with SearXNG web search
 │   ├── slack/                               # Public Slack ingress router
 │   ├── slack-ai-agent/                      # Conversational bridge calling native agent Tirano
-│   └── tool-searxng-search/                 # SearXNG web search tool sub-workflow
+│   ├── tool-searxng-search/                 # SearXNG web search tool sub-workflow
+│   ├── sub-agent-calendar-manager/          # Staged/Archived Calendar Sub-Agent workflow
+│   ├── reminder-poller/                     # Staged/Archived Cron Reminder Poller workflow
+│   └── calendar-native-agent/               # Staged/Archived Canvas Prototype
 ├── agents/                                  # Native n8n Agents (n8n 2.35+)
 │   ├── README.md                            # Agents directory index
-│   └── tirano/                              # Native Agent Tirano (Slack + Hulk LM Studio + SearXNG)
-│       ├── agent.json                       # Exported native agent definition & schema
-│       └── README.md                        # Agent architecture, specs & Slack directives
-├── n8n-mcp/                                 # n8n MCP Server Implementation
-│   ├── src/mcp/server.ts                    # MCP Server initialization & resource handlers
-│   ├── src/mcp/handlers-n8n-manager.ts      # MCP tool execution logic & security rails
-│   └── src/mcp/tools-n8n-manager.ts         # MCP tool definitions
+│   ├── tirano/                              # Native Agent Tirano (Slack + Hulk LM Studio + SearXNG)
+│   │   ├── agent.json                       # Exported native agent definition & schema (Rev 30)
+│   │   └── README.md                        # Agent architecture, specs & Slack directives
+│   └── tirano-gemini/                       # Native Agent tirano-gemini (Slack + Gemini API + SearXNG)
+│       ├── agent.json                       # Exported native agent definition & schema (Rev 3)
+│       └── README.md                        # Agent architecture & Gemini specs
+├── scripts/                                 # Maintenance, backup & export scripts
+│   ├── backup-pull.sh                       # Zero-trust host backup pull script over Meshnet
+│   ├── export-workflows.js                  # Automated n8n REST API workflow exporter
+│   ├── export-agents.js                     # Automated PostgreSQL native agent exporter
+│   ├── gather-host-state.sh                 # Diagnostic script collecting host service state
+│   ├── restart-mcp.sh                       # Process utility restarting local MCP server
+│   └── restore-from-backup.sh               # Verified disaster recovery restore script
 ├── .agents/                                 # Antigravity IDE customizations & MCP config
 │   ├── mcp_config.json                      # Workspace MCP server configuration
 │   ├── sample_mcp_config.json               # Sanitized MCP configuration template

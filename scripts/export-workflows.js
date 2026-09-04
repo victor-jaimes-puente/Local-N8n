@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const N8N_API_URL = process.env.N8N_API_URL || 'https://n8n.local-n8n.com/api/v1';
-const N8N_API_KEY = process.env.N8N_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NGQ4MTcxOC0xZjVkLTQxNTQtYWMxOC0xMzc2NTk1MzVmZGIiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMmIzZDdjMDMtODZlNi00MGYwLTlhOWMtZjZiYjM2NGI4NzhlIiwiaWF0IjoxNzg4MjE1NzUxfQ.aT_eCBS-0dPfsPLO97o1kJIhXVTIHVpn418gGIx_9LU';
+const N8N_API_KEY = process.env.N8N_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NGQ4MTcxOC0xZjVkLTQxNTQtYWMxOC0xMzc2NTk1MzVmZGIiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiNDQ3NGVjNWYtMzBlYi00MmI3LThkZTgtOGFhZDE3MjFhNzkyIiwiaWF0IjoxNzg4NDkwMTc2fQ.vuED-psvhfx8I5Y4uxNClQOIvlw5AQGVh58M_k5vZzk';
 
 async function exportWorkflows() {
   console.log(`Fetching workflows from ${N8N_API_URL}...`);

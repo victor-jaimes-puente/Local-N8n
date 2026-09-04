@@ -1,38 +1,28 @@
 ```markdown
-# Implementation Roadmap: Standalone Private Calendar & Task Agent System
+# Implementation Roadmap: Private Task & Calendar Sub-Agent for Tirano
 
-> **Architecture Directive (Modern n8n Decoupled Agents / v2.35+)**: 
-> Do NOT build legacy n8n AI setups (no monolithic single-canvas chains, hardcoded LangChain sub-nodes, or deprecated Workflow Builder templates). Implement using the new standalone agent architecture:
-> - **Decoupled Architecture**: Build specialist workflows exposed as standalone modular tools via MCP Server Trigger or dedicated sub-workflow triggers. Never cram logic, memory, and multi-tool dependencies into a single mega-canvas.
-> - **Modern MCP Tool Integration**: Connect sub-agents, external model servers, and local tools dynamically using n8n's native MCP Client / Tool connectors rather than wiring rigid, inline sub-nodes.
-> - **Execution & Sandbox Rules**: Design workflows for isolated execution (sandbox-compatible, strictly separated environment variables, Doppler-injected credentials).
-> - **Autonomous Feedback Loops**: Enforce explicit state-validation, execution error-capture, and structured JSON output contracts on sub-agent return nodes so parent orchestrators/MCP clients can inspect failures and iterate autonomously.
+> **Objective**: Implement a self-hosted, private task and calendar management sub-agent integrated with the primary **Tirano** Slack agent. All appointment and reminder data remains strictly local in n8n Data Tables with zero external calendar cloud dependencies.
 
 ---
 
-## Technical Specifications & Environment
+## Technical Specifications & Architecture
 
-- **Primary Orchestrator**: `Tirano` (Native Standalone Agent in the Agents tab, connected to Slack)
-- **Local Model Target**: `google/gemma-4-e4b` (served locally via LM Studio / OpenAI-compatible endpoint)
-- **Model Credentials**: Existing `OpenAI account` credential (pointing to local endpoint with model override `google/gemma-4-e4b`)
+- **Primary Orchestrator**: `Tirano` (Native n8n Standalone Agent, connected to Slack)
+- **Primary Model**: `google/gemma-4-26b-a4b-qat` (hosted on Hulk via LM Studio at `http://100.64.153.30:1234/v1`)
+- **Sub-Agent Model**: `google/gemma-4-26b-a4b-qat`
 - **Data Store**: n8n Data Tables (`reminders` table)
-- **Dispatch Engine**: Decoupled background poller workflow dispatching Slack alerts
+- **Alert Dispatcher**: Scheduled n8n background polling workflow triggering direct Slack notifications
 
 ```mermaid
 graph TD
-    User([User in Slack]) <-->|Socket Mode / Webhook| Tirano[Standalone Agent: Tirano<br/>google/gemma-4-e4b]
+    User([User in Slack]) -->|Conversational Request| Tirano[Tirano Orchestrator Agent]
+    Tirano -->|Delegate Task / Calendar Action| SubAgent[Calendar & Task Sub-Agent]
+    SubAgent -->|Read / Write Rows| DataTable[(n8n Data Table: reminders)]
     
-    subgraph Modular Tools & Sub-Agents [Decoupled Execution Scope]
-        Tirano <-->|MCP Client / Dynamic Tool Call| SubCalendar[Specialist Workflow: Calendar & Task Manager<br/>Trigger: Execute Workflow / MCP Server]
-        SubCalendar -->|CRUD Operations| DataTable[(n8n Data Table: reminders)]
-    end
-
-    subgraph Autonomous Background Dispatcher
-        CronPoller[Scheduled Poller Workflow<br/>Every 1m] -->|Query status: pending & notify_time <= $now| DataTable
-        CronPoller -->|Post Notification| SlackAPI[Slack API Node]
-        SlackAPI -->|Direct Message / Channel Ping| User
-        CronPoller -->|State Update: completed| DataTable
-    end
+    CronPoller[Scheduled Poller Workflow] -->|Check pending alerts <= $now| DataTable
+    CronPoller -->|Post Notification| SlackBot[Slack Bot API]
+    SlackBot -->|Direct Message / Channel Ping| User
+    CronPoller -->|Update status: completed| DataTable
 
 ```
 
@@ -40,114 +30,90 @@ graph TD
 
 ## Phase Overview
 
-| Phase | Milestone | Architecture Focus | Status |
+| Phase | Milestone | Scope / Highlights | Status |
 | --- | --- | --- | --- |
-| **Phase 1** | **Data Store & Schema Definition** | Create zero-cloud `reminders` table in n8n Data Tables with date-indexed columns. | Ready |
-| **Phase 2** | **Specialist Sub-Agent Workflow** | Build decoupled specialist workflow using `google/gemma-4-e4b` via existing OpenAI creds with structured JSON error/output contracts. | Ready |
-| **Phase 3** | **Decoupled Cron Dispatcher** | Independent polling workflow handling alert delivery, error catching, and idempotency. | Ready |
-| **Phase 4** | **Native Orchestrator Tooling** | Bind specialist workflow into Tirano's standalone configuration via modern Tool / MCP connectors. | Ready |
-| **Phase 5** | **Autonomous Loop Validation** | Verify relative timing, multi-tiered advance notices, error interception, and state transitions. | Ready |
+| **Phase 1** | **Local Storage Schema Setup** | Provision `reminders` table in n8n Data Tables with date-indexed fields. | Ready |
+| **Phase 2** | **Sub-Agent Workflow Engineering** | Build sub-agent workflow using Gemma 26B to calculate ISO offsets and persist records. | Ready |
+| **Phase 3** | **Automated Reminder Poller** | Construct scheduled cron workflow querying due tasks and dispatching Slack messages. | Ready |
+| **Phase 4** | **Tirano Orchestrator Integration** | Attach sub-agent tool to native Tirano configuration with routing instructions. | Ready |
+| **Phase 5** | **End-to-End Validation & Guardrails** | Run verification suites covering relative offsets, multi-tiered dates, and query lookups. | Ready |
 
 ---
 
-## Phase 1: Local Storage Schema Setup (n8n Data Tables)
+## Phase 1: Local Storage Schema Setup (n8n Data Table)
 
 ### Objectives
 
-Establish a zero-dependency, local relational schema in n8n Data Tables to hold discrete notification records, event targets, delivery states, and channel metadata.
+Initialize private, persistent data storage within n8n Data Tables to track appointments, discrete reminder times, delivery states, and communication targets.
 
 ### Tasks
 
-1. In the n8n UI, navigate to **Data Tables**.
+1. Navigate to **Data Tables** in the n8n UI.
 2. Create a new table named `reminders`.
-3. Configure the following column schema:
+3. Configure the following column definitions:
 
-| Column Name | Data Type | Description |
+| Column Name | Data Type | Description / Constraints |
 | --- | --- | --- |
-| `id` | Auto / Primary Key | Unique row identifier |
-| `task` | String | Description of task/appointment (e.g., `"Feed the dogs"`, `"Call Joseph"`) |
-| `target_time` | Date | Absolute ISO 8601 timestamp of the actual event |
-| `notify_time` | Date | Exact ISO 8601 timestamp when alert must trigger |
+| `id` | Default / Auto | Unique row identifier |
+| `task` | String | Description of event/task (e.g., `"Feed the dogs"`, `"Call Joseph"`) |
+| `target_time` | Date | Absolute ISO 8601 timestamp of actual event |
+| `notify_time` | Date | Exact ISO 8601 timestamp when alert must be triggered |
 | `offset_label` | String | Human-readable timing tag (e.g., `"1 week before"`, `"1 day before"`, `"event time"`) |
-| `status` | String | Delivery state: `"pending"`, `"completed"`, or `"cancelled"` |
+| `status` | String | Status indicator: `"pending"`, `"completed"`, or `"cancelled"` |
 | `slack_channel` | String | Target Slack channel ID or user DM ID |
 
 ### Definition of Done
 
-* Table `reminders` exists in the local n8n instance.
-* Schema validates ISO 8601 date strings.
+* Table `reminders` exists in n8n.
+* Manual test insertion and deletion succeed.
 
 ---
 
-## Phase 2: Decoupled Specialist Sub-Agent Workflow
+## Phase 2: Calendar & Task Sub-Agent Workflow
 
 ### Objectives
 
-Build an isolated, specialist workflow (`sub-agent-calendar-manager`) that acts as an autonomous tool. It receives conversational scheduling instructions, resolves dynamic time expressions against `{{ $now }}`, calculates advance notice offsets, and manages database state.
+Build an autonomous sub-agent workflow capable of receiving natural-language scheduling instructions, resolving dynamic relative dates against current host time (`$now`), calculating multi-tiered alert offsets, and persisting rows into the `reminders` Data Table.
 
-### Architecture & Node Blueprint
+### Tasks
 
-* **Trigger**: `Execute Workflow Trigger` (or `MCP Server Trigger` for tool exposure)
-* Expected input parameters: `query` (String), `slack_channel` (String), `reference_time` (String, default `{{ $now.toISO() }}`)
-
-
-* **Agent Node**: Standalone `AI Agent` node
-* **Chat Model**: Connected to existing **OpenAI** credentials
-* **Model**: `google/gemma-4-e4b`
-* **Base URL**: Your local inference endpoint (e.g., `http://100.64.153.30:1234/v1` or localhost equivalent)
-* **Timeout**: `360000` ms (cold-load protection)
+1. Create a new workflow: `sub-agent-calendar-manager`.
+2. Configure workflow inputs using an **Execute Workflow Trigger**:
+* `query` (String): Raw instruction from user.
+* `slack_channel` (String): Source Slack channel/user ID.
+* `reference_time` (String): Current ISO timestamp passed from caller (default `{{ $now.toISO() }}`).
 
 
+3. Connect an **AI Agent Node**:
+* **Model**: `@n8n/n8n-nodes-langchain.lmChatOpenAi`
+* **Base URL**: `http://100.64.153.30:1234/v1`
+* **Model Name**: `google/gemma-4-26b-a4b-qat`
+* **Timeout**: `360000` ms
 
 
-* **Connected Modular Tools**:
-* `Insert Row Tool` (Data Table): Bound to `reminders` table (`create_reminder`).
-* `Query Rows Tool` (Data Table): Bound to `reminders` table (`list_reminders`).
-* `Update Row Tool` (Data Table): Bound to `reminders` table (`update_reminder`).
-
-
-* **Autonomous Feedback & Error Contract**:
-* Catch model errors or invalid schemas using an `Error Trigger` or inline validation node.
-* Return node MUST emit a structured JSON output contract:
-```json
-{
-  "status": "success" | "error",
-  "action_performed": "create" | "list" | "cancel",
-  "reminders_created": [
-    {
-      "task": "Call Joseph",
-      "notify_time": "2027-12-29T09:00:00.000Z",
-      "offset_label": "1 week before"
-    }
-  ],
-  "summary": "Scheduled 3 reminders for 'Call Joseph'.",
-  "error_message": null
-}
-
-```
+* **System Prompt**:
+* Explicitly inject current time context: `Reference time is: {{ $now.toISO() }}`.
+* Enforce strict parsing rules: Any advance notification (e.g., "1 week and 1 day before") must produce multiple discrete insertions into the data store, each with calculated `notify_time` and descriptive `offset_label`.
+* Support event lookup queries (e.g., "What do I have scheduled for tomorrow?").
 
 
 
 
+4. Attach **Data Table Tools**:
+* Create tool capabilities for:
+* `create_reminder`: Insert row into `reminders` table.
+* `list_reminders`: Query pending rows filtered by date ranges.
+* `cancel_reminder`: Set status to `"cancelled"`.
 
-### System Prompt Specification
 
-```text
-You are a specialist Task and Calendar Management Agent.
-Current system reference time is: {{ $now.toISO() }}
 
-Rules:
-1. All dates and times must be computed relative to the provided reference time and parsed strictly into ISO 8601 strings.
-2. Advance Reminders: If the user requests multiple notifications (e.g., "1 week and 1 day before"), compute the discrete timestamp for EACH notification and make a separate insert tool call for each row.
-3. Every inserted row must have status = "pending" and the provided slack_channel.
-4. Output strictly according to your structured contract so the calling agent can parse the results.
 
-```
+5. Format the final output node to return a structured JSON response to the caller summarizing scheduled alerts.
 
 ### Definition of Done
 
-* Testing with `"Remind me to feed the dogs in 15 minutes"` writes 1 row with `notify_time` 15 minutes ahead.
-* Testing with `"On Jan 5 2028 remind me to call Joseph, remind me 1 week and 1 day before"` generates 3 discrete rows (`2027-12-29`, `2028-01-04`, `2028-01-05`) with correct `offset_label` tags.
+* Direct workflow executions with payload `"Remind me to feed the dogs in 10 minutes"` correctly write a single row with `notify_time` 10 minutes ahead.
+* Direct workflow executions with `"On Jan 5 2028 remind me to call Joseph, remind me 1 week and 1 day before"` create three separate records with matching offset dates.
 
 ---
 
@@ -155,14 +121,17 @@ Rules:
 
 ### Objectives
 
-Implement a standalone, stateless background polling loop that queries matured reminders and executes delivery without locking workflow state.
+Build a dedicated background cron job that periodically checks for pending reminders that have matured and dispatches notifications via Slack.
 
 ### Tasks
 
-1. Create workflow: `reminder-poller`.
-2. **Trigger**: `Schedule Trigger` configured to run every 1 minute.
-3. **Fetch Due Tasks**:
-* **Data Table Node**:
+1. Create a new workflow: `reminder-poller`.
+2. Configure a **Schedule Trigger**:
+* Set execution interval (e.g., every 1 minute or every 5 minutes).
+
+
+3. Query Due Reminders:
+* Add a **Data Table** node:
 * **Resource**: Row
 * **Operation**: Get Many
 * **Filter**: `status` equals `"pending"` AND `notify_time` <= `{{ $now.toISO() }}`
@@ -170,8 +139,9 @@ Implement a standalone, stateless background polling loop that queries matured r
 
 
 
-4. **Slack Delivery**:
-* **Slack Node**: Send message to channel `{{ $json.slack_channel }}`:
+4. Add **Slack Notification Node**:
+* Send message to target channel: `{{ $json.slack_channel }}`
+* Format message payload:
 ```text
 ⏰ Reminder: {{ $json.task }} ({{ $json.offset_label }})
 
@@ -180,73 +150,66 @@ Implement a standalone, stateless background polling loop that queries matured r
 
 
 
-5. **Idempotent State Update**:
-* **Data Table Node**:
+5. Update Processed Records:
+* Add a **Data Table** node to mark alerted rows:
 * **Operation**: Update
-* Set `status` to `"completed"` where `id` equals `{{ $json.id }}`.
+* Set `status` to `"completed"` where row ID equals `{{ $json.id }}`.
 
 
 
 
-6. **Error Guardrail**: Add conditional branch checking that Slack delivery succeeded (`200 OK`) before marking row as `"completed"`.
 
 ### Definition of Done
 
-* A pending task whose `notify_time` arrives is delivered to Slack within 60 seconds.
-* The record updates to `status: "completed"` and does not fire again.
+* A pending row whose `notify_time` is reached triggers a message in Slack within one polling cycle.
+* Row status transitions to `"completed"` preventing duplicate alert dispatches.
 
 ---
 
-## Phase 4: Native Standalone Orchestrator Integration (Tirano)
+## Phase 4: Tirano Orchestrator Integration
 
 ### Objectives
 
-Expose the Calendar & Task Sub-Agent as a modular tool directly inside the native `Tirano` standalone agent (in the **Agents** tab) without monolithic canvas clutter.
+Integrate the Calendar Sub-Agent workflow into the standalone native `Tirano` agent so all conversational scheduling requests in Slack route naturally.
 
 ### Tasks
 
-1. Open the standalone **Tirano** agent in the **Agents** tab.
-2. Ensure Tirano's model is set to use the local OpenAI credential configured with `google/gemma-4-e4b`.
-3. In Tirano's **Tools** menu, add the sub-agent via **Workflow Tool** (or **MCP Client Tool**):
-* **Tool Name**: `manage_calendar_and_tasks`
-* **Workflow**: Select `sub-agent-calendar-manager`
-* **Description**: *"Handles creating, listing, cancelling, and scheduling reminders, appointments, and tasks. Requires user query and channel ID."*
-
-
-4. Append routing directives to Tirano's system prompt:
+1. Open the standalone **Tirano** agent in the n8n Agents tab.
+2. Register `sub-agent-calendar-manager` under **Sub-agents** (or as a Workflow Tool).
+3. Update Tirano's system prompt with routing rules:
 ```text
-You have access to a specialized Calendar & Task Sub-Agent via the manage_calendar_and_tasks tool.
-When the user mentions creating a reminder, scheduling a task, checking appointments, or cancelling an event:
-1. Delegate the task to manage_calendar_and_tasks, passing their exact query and current Slack channel ID.
-2. Read the structured JSON response returned by the tool.
-3. Respond conversationally to the user summarizing the scheduled times and confirmation details.
-4. Never fabricate scheduling confirmations without a successful tool return.
+You have access to a specialized Calendar & Task Sub-Agent.
+When the user asks to schedule a reminder, set an appointment, check upcoming events, or cancel a reminder:
+1. Delegate the request to the Calendar & Task Sub-Agent.
+2. Pass the user's explicit query along with the current Slack channel/user ID.
+3. Do not invent or assume scheduling confirmations without receiving confirmation from the sub-agent.
 
 ```
 
 
+4. Verify that conversational responses reflect the sub-agent's structured confirmation.
 
 ### Definition of Done
 
-* Asking Tirano in Slack to set a reminder triggers the sub-agent tool call cleanly and returns a verified confirmation.
+* Sending a reminder request directly in Slack to `@Tirano` results in an affirmative confirmation from Tirano summarizing the scheduled alerts.
 
 ---
 
-## Phase 5: End-to-End Autonomous Validation
+## Phase 5: End-to-End Validation & Guardrails
 
-### Validation Test Suite
+### Test Matrix
 
-| Test ID | Test Scenario | Slack Input | Expected Contract & State |
+| Test ID | Input Prompt in Slack | Expected Outcome | Verification |
 | --- | --- | --- | --- |
-| **TC-01** | Relative Quick Reminder | *"Remind me to check deployment in 2 minutes"* | 1 row created; alert posted in Slack at T+2m; row updated to `completed`. |
-| **TC-02** | Multi-Tiered Advance Notice | *"On Jan 5 2028 remind me to call Joseph, remind me 1 week and 1 day before"* | 3 rows created with exact offset math (`2027-12-29`, `2028-01-04`, `2028-01-05`). |
-| **TC-03** | Task Query / Introspection | *"What reminders do I have pending?"* | Sub-agent executes read tool; Tirano formats list in Slack. |
-| **TC-04** | Error & Failure Resilience | *"Remind me to go yesterday"* | Sub-agent catches past-date logic error and returns `status: "error"`; Tirano informs user to pick a future time. |
+| **TC-01** | *"Remind me to check server logs in 2 minutes"* | Single row created in `reminders` table; Slack alert received in ~2 minutes; row marked completed. | Database query & Slack DM |
+| **TC-02** | *"On Jan 5 2028 remind me to call Joseph, remind me 1 week and 1 day before"* | 3 rows created: 2027-12-29, 2028-01-04, 2028-01-05. | Verify `notify_time` & `offset_label` in Data Table |
+| **TC-03** | *"What reminders do I have pending?"* | Tirano queries table and lists all pending tasks formatted cleanly. | Slack conversation response |
+| **TC-04** | Cold Model Load Handling | Ensure sub-agent invocation tolerates LM Studio model load time (timeout set to 360,000 ms). | Container logs / execution time |
 
-### Operational Guardrails
+### Guardrails
 
-* **Credential Hygiene**: Reuse existing Doppler-injected OpenAI credential pointing to the local host without writing static tokens to disk.
-* **Queue Mode Compliance**: The standalone agent and sub-workflow run inside the main n8n orchestrator process, ensuring full compatibility with v2.35+ preview standards.
+* **Timezone Alignment**: Ensure n8n container environment has `GENERIC_TIMEZONE=America/Chicago` (or appropriate local timezone) to avoid UTC parsing offsets.
+* **Queue Mode Compatibility**: Standalone agent sub-workflows should run directly in main instance execution scope to avoid preview queue limitations.
 
 ```
 
