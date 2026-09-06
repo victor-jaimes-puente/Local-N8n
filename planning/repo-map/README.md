@@ -67,6 +67,8 @@ Local-N8n/
 │   ├── gather-host-state.sh                 # Diagnostic script collecting host service state
 │   ├── restart-mcp.sh                       # Process utility restarting local MCP server
 │   └── restore-from-backup.sh               # Verified disaster recovery restore script
+├── server-scripts/                          # Hardened host-side automation scripts
+│   └── backup-docker-stream.sh              # Least-privilege root backup helper installed to /opt/scripts/
 ├── .agents/                                 # Antigravity IDE customizations & MCP config
 │   ├── mcp_config.json                      # Workspace MCP server configuration
 │   ├── sample_mcp_config.json               # Sanitized MCP configuration template

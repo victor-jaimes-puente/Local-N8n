@@ -98,18 +98,8 @@ LOCAL_DUMP_PATH="${DB_BACKUP_DIR}/${DUMP_FILENAME}"
 
 log_info "Streaming live PostgreSQL pg_dump over SSH tunnel..."
 
-# Query postgres container name or id and execute pg_dump directly to stream
-ssh "${SSH_OPTS[@]}" "${SSH_TARGET}" bash -s << 'REMOTE_COMMAND' > "${LOCAL_DUMP_PATH}"
-set -euo pipefail
-POSTGRES_CONTAINER="$(docker ps -q -f "name=postgres" | head -n 1)"
-if [[ -z "${POSTGRES_CONTAINER}" ]]; then
-    echo "ERROR: PostgreSQL container is not running on remote host." >&2
-    exit 2
-fi
-
-# Run pg_dump inside the container and stream binary custom format (-Fc) to stdout
-docker exec -i "${POSTGRES_CONTAINER}" sh -c 'pg_dump -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" -Fc -b'
-REMOTE_COMMAND
+# Execute pg_dump directly via root backup helper stream
+ssh "${SSH_OPTS[@]}" "${SSH_TARGET}" "sudo /opt/scripts/backup-docker-stream.sh dump-db" > "${LOCAL_DUMP_PATH}"
 
 # Verify dump file was generated and is not zero bytes
 if [[ ! -s "${LOCAL_DUMP_PATH}" ]]; then
@@ -126,8 +116,8 @@ log_success "PostgreSQL dump streamed successfully (${DUMP_SIZE}): ${LOCAL_DUMP_
 # ------------------------------------------------------------------------------
 log_info "Streaming Docker named volumes over SSH..."
 
-# Query existing docker volumes on the remote host
-REMOTE_VOLUME_LIST="$(ssh "${SSH_OPTS[@]}" "${SSH_TARGET}" "docker volume ls -q")"
+# Query existing docker volumes on the remote host via backup helper
+REMOTE_VOLUME_LIST="$(ssh "${SSH_OPTS[@]}" "${SSH_TARGET}" "sudo /opt/scripts/backup-docker-stream.sh list-volumes")"
 
 CURRENT_VOLUME_FILES=()
 
@@ -145,7 +135,7 @@ for VOL_PATTERN in "${TARGET_VOLUMES[@]}"; do
     log_info "Streaming volume '${MATCHED_VOL}' to ${VOL_ARCHIVE_NAME}..."
 
     ssh "${SSH_OPTS[@]}" "${SSH_TARGET}" \
-        "docker run --rm -v \"${MATCHED_VOL}:/data:ro\" alpine tar -czf - -C /data ." > "${LOCAL_VOL_PATH}"
+        "sudo /opt/scripts/backup-docker-stream.sh stream-volume \"${MATCHED_VOL}\"" > "${LOCAL_VOL_PATH}"
 
     if [[ ! -s "${LOCAL_VOL_PATH}" ]]; then
         log_warn "Volume archive for ${MATCHED_VOL} is empty or failed to stream. Removing."
@@ -174,6 +164,8 @@ rsync -avz --delete \
     --exclude '*.log' \
     --exclude 'node_modules' \
     --exclude '.env' \
+    --exclude '.tls' \
+    --exclude 'sandbox/.tls' \
     "${SSH_TARGET}:${REMOTE_DIR}/" \
     "${CONFIG_BACKUP_DIR}/latest/" >> "${LOG_FILE}" 2>&1
 
@@ -189,7 +181,8 @@ mkdir -p "${HOST_BACKUP_DIR}"
 HOST_ARCHIVE_NAME="host-state-${TIMESTAMP}.tar.gz"
 LOCAL_HOST_BACKUP_PATH="${HOST_BACKUP_DIR}/${HOST_ARCHIVE_NAME}"
 SCRIPT_PATH="/opt/scripts/gather-host-state.sh"
-
+# Ensure no stale archive exists with conflicting ownership
+ssh "${SSH_OPTS[@]}" "${SSH_TARGET}" "sudo /opt/scripts/backup-docker-stream.sh clean-host-state || true"
 ssh "${SSH_OPTS[@]}" "${SSH_TARGET}" "sudo ${SCRIPT_PATH}"
 
 log_info "Pulling host state archive..."
@@ -197,7 +190,7 @@ rsync -avz -e "${SSH_RSYNC_CMD}" \
     "${SSH_TARGET}:/tmp/host-state-backup.tar.gz" "${LOCAL_HOST_BACKUP_PATH}" >> "${LOG_FILE}" 2>&1
 
 log_info "Cleaning up server archive..."
-ssh "${SSH_OPTS[@]}" "${SSH_TARGET}" "rm -f /tmp/host-state-backup.tar.gz || true"
+ssh "${SSH_OPTS[@]}" "${SSH_TARGET}" "sudo /opt/scripts/backup-docker-stream.sh clean-host-state || true"
 
 if [[ -s "${LOCAL_HOST_BACKUP_PATH}" ]]; then
     HOST_SIZE="$(du -h "${LOCAL_HOST_BACKUP_PATH}" | cut -f1)"
