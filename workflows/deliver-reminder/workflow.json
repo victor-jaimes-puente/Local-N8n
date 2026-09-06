@@ -2,33 +2,51 @@
   "id": "Pl3LHiJp4nbF7zz2",
   "name": "deliver-reminder",
   "active": true,
+  "activeVersionId": "aa045fe6-06e2-4150-ad84-a5903f55453d",
+  "createdAt": "2026-09-04T20:54:35.371Z",
+  "updatedAt": "2026-09-04T20:54:39.062Z",
+  "isArchived": false,
+  "versionId": "aa045fe6-06e2-4150-ad84-a5903f55453d",
+  "triggerCount": 1,
   "nodes": [
     {
       "id": "webhook",
       "name": "Webhook",
+      "webhookId": "deliver-reminder-webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        100,
+        300
+      ],
       "parameters": {
         "httpMethod": "POST",
         "path": "deliver-reminder",
         "responseMode": "lastNode"
-      },
-      "position": [100, 300],
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "webhookId": "deliver-reminder-webhook"
+      }
     },
     {
       "id": "parse-payload",
       "name": "Validate & Parse Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        300
+      ],
       "parameters": {
         "jsCode": "const body = $input.first().json.body || $input.first().json;\n\nconst reminder_id = body.reminder_id || body.id;\nconst task = body.task || 'Reminder';\nconst slack_channel = body.slack_channel || '';\nconst offset_label = body.offset_label || 'event time';\nconst target_time = body.target_time || '';\n\nif (!reminder_id) {\n  throw new Error('Missing reminder_id in payload: ' + JSON.stringify(body));\n}\n\nreturn [{\n  json: {\n    reminder_id: Number(reminder_id),\n    task,\n    slack_channel,\n    offset_label,\n    target_time,\n    receivedAt: new Date().toISOString()\n  }\n}];"
-      },
-      "position": [300, 300],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
+      }
     },
     {
       "id": "get-row",
       "name": "Get Reminder Row",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        500,
+        300
+      ],
       "parameters": {
         "dataTableId": {
           "__rl": true,
@@ -45,14 +63,17 @@
           ]
         },
         "operation": "get"
-      },
-      "position": [500, 300],
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1
+      }
     },
     {
       "id": "check-status",
       "name": "Check Status Pending",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        700,
+        300
+      ],
       "parameters": {
         "conditions": {
           "conditions": [
@@ -73,14 +94,17 @@
             "version": 2
           }
         }
-      },
-      "position": [700, 300],
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2
+      }
     },
     {
       "id": "lock-processing",
       "name": "Lock Row (Processing)",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        200
+      ],
       "parameters": {
         "columns": {
           "mappingMode": "defineBelow",
@@ -103,20 +127,18 @@
           ]
         },
         "operation": "update"
-      },
-      "position": [900, 200],
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1
+      }
     },
     {
-      "credentials": {
-        "slackApi": {
-          "id": "VzU1fxGd9Yg0Y3hM",
-          "name": "TiranoTech - Tirano"
-        }
-      },
       "id": "slack-alert",
       "name": "Slack Notification",
+      "webhookId": "deliver-reminder-slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        200
+      ],
       "parameters": {
         "authentication": "accessToken",
         "channelId": {
@@ -129,14 +151,22 @@
         "select": "channel",
         "text": "=⏰ *Reminder:* {{ $('Validate & Parse Payload').item.json.task }} (_{{ $('Validate & Parse Payload').item.json.offset_label }}_)"
       },
-      "position": [1100, 200],
-      "type": "n8n-nodes-base.slack",
-      "typeVersion": 2.2,
-      "webhookId": "deliver-reminder-slack"
+      "credentials": {
+        "slackApi": {
+          "id": "VzU1fxGd9Yg0Y3hM",
+          "name": "TiranoTech - Tirano"
+        }
+      }
     },
     {
       "id": "mark-completed",
       "name": "Mark Completed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1300,
+        200
+      ],
       "parameters": {
         "columns": {
           "mappingMode": "defineBelow",
@@ -159,20 +189,20 @@
           ]
         },
         "operation": "update"
-      },
-      "position": [1300, 200],
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1
+      }
     },
     {
       "id": "skipped-resp",
       "name": "Skipped Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        400
+      ],
       "parameters": {
         "jsCode": "const row = $input.first().json;\nreturn [{\n  json: {\n    success: true,\n    skipped: true,\n    current_status: row.status,\n    message: `Reminder ${row.id} skipped (status is ${row.status})`\n  }\n}];"
-      },
-      "position": [900, 400],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
+      }
     }
   ],
   "connections": {
@@ -255,7 +285,309 @@
       ]
     }
   },
+  "nodeGroups": [],
   "settings": {
     "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": null,
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "Pl3LHiJp4nbF7zz2",
+      "projectId": "zeGW8E3sHgkaR4Sr",
+      "createdAt": "2026-09-04T20:54:35.371Z",
+      "updatedAt": "2026-09-04T20:54:35.371Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "aa045fe6-06e2-4150-ad84-a5903f55453d",
+    "workflowId": "Pl3LHiJp4nbF7zz2",
+    "nodes": [
+      {
+        "id": "webhook",
+        "name": "Webhook",
+        "webhookId": "deliver-reminder-webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          100,
+          300
+        ],
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "deliver-reminder",
+          "responseMode": "lastNode"
+        }
+      },
+      {
+        "id": "parse-payload",
+        "name": "Validate & Parse Payload",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          300,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const body = $input.first().json.body || $input.first().json;\n\nconst reminder_id = body.reminder_id || body.id;\nconst task = body.task || 'Reminder';\nconst slack_channel = body.slack_channel || '';\nconst offset_label = body.offset_label || 'event time';\nconst target_time = body.target_time || '';\n\nif (!reminder_id) {\n  throw new Error('Missing reminder_id in payload: ' + JSON.stringify(body));\n}\n\nreturn [{\n  json: {\n    reminder_id: Number(reminder_id),\n    task,\n    slack_channel,\n    offset_label,\n    target_time,\n    receivedAt: new Date().toISOString()\n  }\n}];"
+        }
+      },
+      {
+        "id": "get-row",
+        "name": "Get Reminder Row",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          500,
+          300
+        ],
+        "parameters": {
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "filters": {
+            "conditions": [
+              {
+                "condition": "eq",
+                "keyName": "id",
+                "keyValue": "={{ $json.reminder_id }}"
+              }
+            ]
+          },
+          "operation": "get"
+        }
+      },
+      {
+        "id": "check-status",
+        "name": "Check Status Pending",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          700,
+          300
+        ],
+        "parameters": {
+          "conditions": {
+            "conditions": [
+              {
+                "id": "cond-is-pending",
+                "leftValue": "={{ $json.status }}",
+                "operator": {
+                  "operation": "equals",
+                  "type": "string"
+                },
+                "rightValue": "pending"
+              }
+            ],
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            }
+          }
+        }
+      },
+      {
+        "id": "lock-processing",
+        "name": "Lock Row (Processing)",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          900,
+          200
+        ],
+        "parameters": {
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "status": "processing"
+            }
+          },
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "filters": {
+            "conditions": [
+              {
+                "condition": "eq",
+                "keyName": "id",
+                "keyValue": "={{ $('Validate & Parse Payload').item.json.reminder_id }}"
+              }
+            ]
+          },
+          "operation": "update"
+        }
+      },
+      {
+        "id": "slack-alert",
+        "name": "Slack Notification",
+        "webhookId": "deliver-reminder-slack",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.2,
+        "position": [
+          1100,
+          200
+        ],
+        "parameters": {
+          "authentication": "accessToken",
+          "channelId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $('Validate & Parse Payload').item.json.slack_channel }}"
+          },
+          "operation": "post",
+          "resource": "message",
+          "select": "channel",
+          "text": "=⏰ *Reminder:* {{ $('Validate & Parse Payload').item.json.task }} (_{{ $('Validate & Parse Payload').item.json.offset_label }}_)"
+        },
+        "credentials": {
+          "slackApi": {
+            "id": "VzU1fxGd9Yg0Y3hM",
+            "name": "TiranoTech - Tirano"
+          }
+        }
+      },
+      {
+        "id": "mark-completed",
+        "name": "Mark Completed",
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1,
+        "position": [
+          1300,
+          200
+        ],
+        "parameters": {
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "status": "completed"
+            }
+          },
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "filters": {
+            "conditions": [
+              {
+                "condition": "eq",
+                "keyName": "id",
+                "keyValue": "={{ $('Validate & Parse Payload').item.json.reminder_id }}"
+              }
+            ]
+          },
+          "operation": "update"
+        }
+      },
+      {
+        "id": "skipped-resp",
+        "name": "Skipped Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          900,
+          400
+        ],
+        "parameters": {
+          "jsCode": "const row = $input.first().json;\nreturn [{\n  json: {\n    success: true,\n    skipped: true,\n    current_status: row.status,\n    message: `Reminder ${row.id} skipped (status is ${row.status})`\n  }\n}];"
+        }
+      }
+    ],
+    "connections": {
+      "Check Status Pending": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Lock Row (Processing)",
+              "type": "main"
+            }
+          ],
+          [
+            {
+              "index": 0,
+              "node": "Skipped Response",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Get Reminder Row": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Check Status Pending",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Lock Row (Processing)": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Slack Notification",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Mark Completed": {
+        "main": [
+          []
+        ]
+      },
+      "Slack Notification": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Mark Completed",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Validate & Parse Payload": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Get Reminder Row",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Webhook": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Validate & Parse Payload",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Victor Jaimes-Puente",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-09-04T20:54:35.371Z",
+    "updatedAt": "2026-09-04T20:54:35.371Z"
   }
 }

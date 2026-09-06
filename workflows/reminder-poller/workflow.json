@@ -2,6 +2,12 @@
   "id": "aHpvAYW4Jnbf9rte",
   "name": "reminder-poller",
   "active": true,
+  "activeVersionId": "6e515149-1945-4a4c-a35e-b59f046eba59",
+  "createdAt": "2026-09-04T14:28:38.355Z",
+  "updatedAt": "2026-09-04T20:55:04.824Z",
+  "isArchived": false,
+  "versionId": "6e515149-1945-4a4c-a35e-b59f046eba59",
+  "triggerCount": 1,
   "nodes": [
     {
       "id": "trigger",
@@ -16,7 +22,10 @@
           ]
         }
       },
-      "position": [100, 300],
+      "position": [
+        100,
+        300
+      ],
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1
     },
@@ -26,7 +35,10 @@
       "parameters": {
         "inputSource": "passthrough"
       },
-      "position": [100, 150],
+      "position": [
+        100,
+        150
+      ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
     },
@@ -52,7 +64,10 @@
         "operation": "get",
         "returnAll": true
       },
-      "position": [300, 150],
+      "position": [
+        300,
+        150
+      ],
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1
     },
@@ -62,7 +77,10 @@
       "parameters": {
         "jsCode": "const items = $input.all();\nconst cutoff = Date.now() - (5 * 60 * 1000);\nconst stale = [];\n\nfor (const item of items) {\n  const row = item.json;\n  const updatedTime = row.updatedAt ? new Date(row.updatedAt).getTime() : 0;\n  if (updatedTime < cutoff && row.id) {\n    stale.push({ json: row });\n  }\n}\n\nreturn stale;"
       },
-      "position": [500, 150],
+      "position": [
+        500,
+        150
+      ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
     },
@@ -92,7 +110,10 @@
         },
         "operation": "update"
       },
-      "position": [700, 150],
+      "position": [
+        700,
+        150
+      ],
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1
     },
@@ -123,7 +144,10 @@
         "operation": "get",
         "returnAll": true
       },
-      "position": [300, 350],
+      "position": [
+        300,
+        350
+      ],
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1
     },
@@ -153,7 +177,10 @@
         },
         "operation": "update"
       },
-      "position": [500, 350],
+      "position": [
+        500,
+        350
+      ],
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1
     },
@@ -179,7 +206,10 @@
         "select": "channel",
         "text": "=⏰ *Reminder:* {{ $json.task }} (_{{ $json.offset_label }}_)\n> ⚠️ _[Delayed Delivery - Safety Net]_"
       },
-      "position": [700, 350],
+      "position": [
+        700,
+        350
+      ],
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.2,
       "webhookId": "ecab5953-e1e8-478f-9d38-e43e488cb6bd"
@@ -207,7 +237,10 @@
           }
         }
       },
-      "position": [900, 350],
+      "position": [
+        900,
+        350
+      ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2
     },
@@ -237,7 +270,10 @@
         },
         "operation": "update"
       },
-      "position": [1100, 300],
+      "position": [
+        1100,
+        300
+      ],
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1
     },
@@ -267,7 +303,10 @@
         },
         "operation": "update"
       },
-      "position": [1100, 450],
+      "position": [
+        1100,
+        450
+      ],
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1
     }
@@ -379,7 +418,451 @@
       ]
     }
   },
+  "nodeGroups": [],
   "settings": {
     "executionOrder": "v1"
+  },
+  "staticData": {
+    "node:Schedule Trigger": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "pinData": null,
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "aHpvAYW4Jnbf9rte",
+      "projectId": "zeGW8E3sHgkaR4Sr",
+      "createdAt": "2026-09-04T14:28:38.355Z",
+      "updatedAt": "2026-09-04T14:28:38.355Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "6e515149-1945-4a4c-a35e-b59f046eba59",
+    "workflowId": "aHpvAYW4Jnbf9rte",
+    "nodes": [
+      {
+        "id": "trigger",
+        "name": "Schedule Trigger",
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "minutes",
+                "minutesInterval": 30
+              }
+            ]
+          }
+        },
+        "position": [
+          100,
+          300
+        ],
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.1
+      },
+      {
+        "id": "manual-trigger",
+        "name": "Execute Workflow Trigger",
+        "parameters": {
+          "inputSource": "passthrough"
+        },
+        "position": [
+          100,
+          150
+        ],
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1
+      },
+      {
+        "id": "sweep-zombies",
+        "name": "Get Zombie Processing Rows",
+        "parameters": {
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "filters": {
+            "conditions": [
+              {
+                "condition": "eq",
+                "keyName": "status",
+                "keyValue": "processing"
+              }
+            ]
+          },
+          "matchType": "allConditions",
+          "operation": "get",
+          "returnAll": true
+        },
+        "position": [
+          300,
+          150
+        ],
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1
+      },
+      {
+        "id": "filter-stale",
+        "name": "Filter Stale (>5m)",
+        "parameters": {
+          "jsCode": "const items = $input.all();\nconst cutoff = Date.now() - (5 * 60 * 1000);\nconst stale = [];\n\nfor (const item of items) {\n  const row = item.json;\n  const updatedTime = row.updatedAt ? new Date(row.updatedAt).getTime() : 0;\n  if (updatedTime < cutoff && row.id) {\n    stale.push({ json: row });\n  }\n}\n\nreturn stale;"
+        },
+        "position": [
+          500,
+          150
+        ],
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2
+      },
+      {
+        "id": "reset-stale",
+        "name": "Reset Stale to Pending",
+        "parameters": {
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "status": "pending"
+            }
+          },
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "filters": {
+            "conditions": [
+              {
+                "condition": "eq",
+                "keyName": "id",
+                "keyValue": "={{ $json.id }}"
+              }
+            ]
+          },
+          "operation": "update"
+        },
+        "position": [
+          700,
+          150
+        ],
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1
+      },
+      {
+        "id": "get-due",
+        "name": "Get Due Reminders",
+        "parameters": {
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "filters": {
+            "conditions": [
+              {
+                "condition": "eq",
+                "keyName": "status",
+                "keyValue": "pending"
+              },
+              {
+                "condition": "lte",
+                "keyName": "notify_time",
+                "keyValue": "={{ $now.minus({ minutes: 5 }).toISO() }}"
+              }
+            ]
+          },
+          "matchType": "allConditions",
+          "operation": "get",
+          "returnAll": true
+        },
+        "position": [
+          300,
+          350
+        ],
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1
+      },
+      {
+        "id": "claim-processing",
+        "name": "Claim Rows (Double-Delivery Guard)",
+        "parameters": {
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "status": "processing"
+            }
+          },
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "filters": {
+            "conditions": [
+              {
+                "condition": "eq",
+                "keyName": "id",
+                "keyValue": "={{ $json.id }}"
+              }
+            ]
+          },
+          "operation": "update"
+        },
+        "position": [
+          500,
+          350
+        ],
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1
+      },
+      {
+        "credentials": {
+          "slackApi": {
+            "id": "VzU1fxGd9Yg0Y3hM",
+            "name": "TiranoTech - Tirano"
+          }
+        },
+        "id": "slack-alert",
+        "name": "Slack Notification",
+        "onError": "continueRegularOutput",
+        "parameters": {
+          "authentication": "accessToken",
+          "channelId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $json.slack_channel }}"
+          },
+          "operation": "post",
+          "resource": "message",
+          "select": "channel",
+          "text": "=⏰ *Reminder:* {{ $json.task }} (_{{ $json.offset_label }}_)\n> ⚠️ _[Delayed Delivery - Safety Net]_"
+        },
+        "position": [
+          700,
+          350
+        ],
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.2,
+        "webhookId": "ecab5953-e1e8-478f-9d38-e43e488cb6bd"
+      },
+      {
+        "id": "check-success",
+        "name": "Check Delivery Success",
+        "parameters": {
+          "conditions": {
+            "conditions": [
+              {
+                "id": "cond-has-error",
+                "leftValue": "={{ $json.error }}",
+                "operator": {
+                  "operation": "empty",
+                  "type": "string"
+                }
+              }
+            ],
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            }
+          }
+        },
+        "position": [
+          900,
+          350
+        ],
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2
+      },
+      {
+        "id": "mark-completed",
+        "name": "Mark Completed",
+        "parameters": {
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "status": "completed"
+            }
+          },
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "filters": {
+            "conditions": [
+              {
+                "condition": "eq",
+                "keyName": "id",
+                "keyValue": "={{ $('Claim Rows (Double-Delivery Guard)').item.json.id }}"
+              }
+            ]
+          },
+          "operation": "update"
+        },
+        "position": [
+          1100,
+          300
+        ],
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1
+      },
+      {
+        "id": "mark-failed",
+        "name": "Mark Failed",
+        "parameters": {
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "status": "failed"
+            }
+          },
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "filters": {
+            "conditions": [
+              {
+                "condition": "eq",
+                "keyName": "id",
+                "keyValue": "={{ $('Claim Rows (Double-Delivery Guard)').item.json.id }}"
+              }
+            ]
+          },
+          "operation": "update"
+        },
+        "position": [
+          1100,
+          450
+        ],
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1
+      }
+    ],
+    "connections": {
+      "Check Delivery Success": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Mark Completed",
+              "type": "main"
+            }
+          ],
+          [
+            {
+              "index": 0,
+              "node": "Mark Failed",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Claim Rows (Double-Delivery Guard)": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Slack Notification",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Execute Workflow Trigger": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Get Zombie Processing Rows",
+              "type": "main"
+            },
+            {
+              "index": 0,
+              "node": "Get Due Reminders",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Filter Stale (>5m)": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Reset Stale to Pending",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Get Due Reminders": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Claim Rows (Double-Delivery Guard)",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Get Zombie Processing Rows": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Filter Stale (>5m)",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Schedule Trigger": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Get Zombie Processing Rows",
+              "type": "main"
+            },
+            {
+              "index": 0,
+              "node": "Get Due Reminders",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Slack Notification": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Check Delivery Success",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Victor Jaimes-Puente",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-09-04T20:55:04.825Z",
+    "updatedAt": "2026-09-04T20:55:04.825Z"
   }
 }

@@ -2,6 +2,12 @@
   "id": "xvcby8WREF4cxTCr",
   "name": "tool-calendar-batch-insert",
   "active": true,
+  "activeVersionId": "a63b48ba-29e3-43c4-aeb3-c5817699d740",
+  "createdAt": "2026-09-04T14:27:00.701Z",
+  "updatedAt": "2026-09-04T20:54:51.680Z",
+  "isArchived": false,
+  "versionId": "a63b48ba-29e3-43c4-aeb3-c5817699d740",
+  "triggerCount": 0,
   "nodes": [
     {
       "id": "trigger",
@@ -9,7 +15,10 @@
       "parameters": {
         "inputSource": "passthrough"
       },
-      "position": [100, 300],
+      "position": [
+        100,
+        300
+      ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
     },
@@ -19,7 +28,10 @@
       "parameters": {
         "jsCode": "const input = $input.first().json;\nlet raw = input.reminders ?? input.query ?? input.input ?? input;\nif (typeof raw === 'string') {\n  try { raw = JSON.parse(raw); } catch(e) {}\n}\nlet reminders = [];\nif (Array.isArray(raw)) {\n  reminders = raw;\n} else if (raw && typeof raw === 'object' && Array.isArray(raw.reminders)) {\n  reminders = raw.reminders;\n} else if (raw && typeof raw === 'object' && raw.task) {\n  reminders = [raw];\n}\n\nif (reminders.length === 0) {\n  throw new Error(\"No reminders provided in input: \" + JSON.stringify(input));\n}\n\nreturn reminders.map(r => ({\n  json: {\n    task: r.task || '',\n    target_time: r.target_time || '',\n    notify_time: r.notify_time || '',\n    offset_label: r.offset_label || 'event time',\n    status: r.status || 'pending',\n    slack_channel: r.slack_channel || ''\n  }\n}));"
       },
-      "position": [300, 300],
+      "position": [
+        300,
+        300
+      ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
     },
@@ -45,7 +57,10 @@
         },
         "operation": "insert"
       },
-      "position": [500, 300],
+      "position": [
+        500,
+        300
+      ],
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1
     },
@@ -55,7 +70,10 @@
       "parameters": {
         "jsCode": "const items = $input.all();\nconst qstashToken = $env.QSTASH_TOKEN || '';\n\nreturn items.map(item => {\n  const row = item.json;\n  const notifyTimeMs = new Date(row.notify_time).getTime();\n  const nowMs = Date.now();\n  const delaySec = Math.floor((notifyTimeMs - nowMs) / 1000);\n  const notBeforeSec = Math.floor(notifyTimeMs / 1000);\n\n  const body = {\n    reminder_id: row.id,\n    task: row.task,\n    slack_channel: row.slack_channel,\n    offset_label: row.offset_label,\n    target_time: row.target_time\n  };\n\n  return {\n    json: {\n      row_id: row.id,\n      task: row.task,\n      slack_channel: row.slack_channel,\n      notify_time: row.notify_time,\n      notBeforeSec: delaySec > 5 ? notBeforeSec : null,\n      delaySec: delaySec > 5 ? null : 0,\n      authHeader: qstashToken ? `Bearer ${qstashToken}` : '',\n      body\n    }\n  };\n});"
       },
-      "position": [700, 300],
+      "position": [
+        700,
+        300
+      ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
     },
@@ -91,7 +109,10 @@
         "specifyInputData": "json",
         "url": "https://qstash.upstash.io/v2/publish/https://webhook.tiranotech.com/webhook/deliver-reminder"
       },
-      "position": [900, 300],
+      "position": [
+        900,
+        300
+      ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2
     },
@@ -101,7 +122,10 @@
       "parameters": {
         "jsCode": "const items = $input.all();\nconst inserted = $('Insert Into Reminders Table').all().map(i => i.json);\n\nreturn [{\n  json: {\n    success: true,\n    inserted_count: inserted.length,\n    reminders: inserted,\n    qstash_responses: items.map(i => i.json)\n  }\n}];"
       },
-      "position": [1100, 300],
+      "position": [
+        1100,
+        300
+      ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
     }
@@ -116,6 +140,11 @@
             "type": "main"
           }
         ]
+      ]
+    },
+    "Format Output": {
+      "main": [
+        []
       ]
     },
     "Insert Into Reminders Table": {
@@ -163,7 +192,216 @@
       ]
     }
   },
+  "nodeGroups": [],
   "settings": {
     "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": null,
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "xvcby8WREF4cxTCr",
+      "projectId": "zeGW8E3sHgkaR4Sr",
+      "createdAt": "2026-09-04T14:27:00.701Z",
+      "updatedAt": "2026-09-04T14:27:00.701Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "a63b48ba-29e3-43c4-aeb3-c5817699d740",
+    "workflowId": "xvcby8WREF4cxTCr",
+    "nodes": [
+      {
+        "id": "trigger",
+        "name": "Execute Workflow Trigger",
+        "parameters": {
+          "inputSource": "passthrough"
+        },
+        "position": [
+          100,
+          300
+        ],
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1
+      },
+      {
+        "id": "normalize",
+        "name": "Normalize Reminders",
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nlet raw = input.reminders ?? input.query ?? input.input ?? input;\nif (typeof raw === 'string') {\n  try { raw = JSON.parse(raw); } catch(e) {}\n}\nlet reminders = [];\nif (Array.isArray(raw)) {\n  reminders = raw;\n} else if (raw && typeof raw === 'object' && Array.isArray(raw.reminders)) {\n  reminders = raw.reminders;\n} else if (raw && typeof raw === 'object' && raw.task) {\n  reminders = [raw];\n}\n\nif (reminders.length === 0) {\n  throw new Error(\"No reminders provided in input: \" + JSON.stringify(input));\n}\n\nreturn reminders.map(r => ({\n  json: {\n    task: r.task || '',\n    target_time: r.target_time || '',\n    notify_time: r.notify_time || '',\n    offset_label: r.offset_label || 'event time',\n    status: r.status || 'pending',\n    slack_channel: r.slack_channel || ''\n  }\n}));"
+        },
+        "position": [
+          300,
+          300
+        ],
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2
+      },
+      {
+        "id": "insert-rows",
+        "name": "Insert Into Reminders Table",
+        "parameters": {
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "notify_time": "={{ $json.notify_time }}",
+              "offset_label": "={{ $json.offset_label }}",
+              "slack_channel": "={{ $json.slack_channel }}",
+              "status": "={{ $json.status }}",
+              "target_time": "={{ $json.target_time }}",
+              "task": "={{ $json.task }}"
+            }
+          },
+          "dataTableId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "UfEmiO0qytgmsjE4"
+          },
+          "operation": "insert"
+        },
+        "position": [
+          500,
+          300
+        ],
+        "type": "n8n-nodes-base.dataTable",
+        "typeVersion": 1.1
+      },
+      {
+        "id": "prep-qstash",
+        "name": "Prepare QStash Payloads",
+        "parameters": {
+          "jsCode": "const items = $input.all();\nconst qstashToken = $env.QSTASH_TOKEN || '';\n\nreturn items.map(item => {\n  const row = item.json;\n  const notifyTimeMs = new Date(row.notify_time).getTime();\n  const nowMs = Date.now();\n  const delaySec = Math.floor((notifyTimeMs - nowMs) / 1000);\n  const notBeforeSec = Math.floor(notifyTimeMs / 1000);\n\n  const body = {\n    reminder_id: row.id,\n    task: row.task,\n    slack_channel: row.slack_channel,\n    offset_label: row.offset_label,\n    target_time: row.target_time\n  };\n\n  return {\n    json: {\n      row_id: row.id,\n      task: row.task,\n      slack_channel: row.slack_channel,\n      notify_time: row.notify_time,\n      notBeforeSec: delaySec > 5 ? notBeforeSec : null,\n      delaySec: delaySec > 5 ? null : 0,\n      authHeader: qstashToken ? `Bearer ${qstashToken}` : '',\n      body\n    }\n  };\n});"
+        },
+        "position": [
+          700,
+          300
+        ],
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2
+      },
+      {
+        "id": "schedule-qstash",
+        "name": "Schedule QStash Message",
+        "onError": "continueRegularOutput",
+        "parameters": {
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "={{ $json.authHeader }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Upstash-Not-Before",
+                "value": "={{ $json.notBeforeSec ? $json.notBeforeSec.toString() : '' }}"
+              },
+              {
+                "name": "Upstash-Delay",
+                "value": "={{ $json.delaySec !== null ? '0s' : '' }}"
+              }
+            ]
+          },
+          "method": "POST",
+          "options": {},
+          "sendBody": true,
+          "specifyHeaders": "keypair",
+          "specifyInputData": "json",
+          "url": "https://qstash.upstash.io/v2/publish/https://webhook.tiranotech.com/webhook/deliver-reminder"
+        },
+        "position": [
+          900,
+          300
+        ],
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2
+      },
+      {
+        "id": "format-output",
+        "name": "Format Output",
+        "parameters": {
+          "jsCode": "const items = $input.all();\nconst inserted = $('Insert Into Reminders Table').all().map(i => i.json);\n\nreturn [{\n  json: {\n    success: true,\n    inserted_count: inserted.length,\n    reminders: inserted,\n    qstash_responses: items.map(i => i.json)\n  }\n}];"
+        },
+        "position": [
+          1100,
+          300
+        ],
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2
+      }
+    ],
+    "connections": {
+      "Execute Workflow Trigger": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Normalize Reminders",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Format Output": {
+        "main": [
+          []
+        ]
+      },
+      "Insert Into Reminders Table": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Prepare QStash Payloads",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Normalize Reminders": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Insert Into Reminders Table",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Prepare QStash Payloads": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Schedule QStash Message",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Schedule QStash Message": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Format Output",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Victor Jaimes-Puente",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-09-04T20:54:51.681Z",
+    "updatedAt": "2026-09-04T20:54:51.681Z"
   }
 }
