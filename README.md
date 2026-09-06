@@ -43,11 +43,12 @@ The infrastructure operates with the following core configurations:
 - **Custom Subdomains:** Local hosts files on client machines map the custom subdomains (`n8n.local-n8n.com` and `lingua.local-n8n.com`) directly to the server's static Meshnet IP (`100.116.224.88`).
 
 ### 3. Network Security & Firewall Adjustments
-- **NordVPN Firewall:** NordVPN's internal firewall is disabled (`nordvpn set firewall off`) to permit return packets across Docker's internal subnet.
-- **UFW Native Firewall:** Ubuntu's native UFW acts as the primary firewall, strictly allowing SSH and Meshnet traffic.
+- **NordVPN Firewall:** NordVPN's internal firewall is disabled (`nordvpn set firewall off`) to permit return packets across Docker's internal subnet without dropping container traffic.
+- **UFW Native Firewall:** Ubuntu's native UFW acts as the primary firewall, configured with `default deny incoming` and `default deny routed`. Inbound traffic on ports 22, 80, and 443 is strictly locked to the authorized Mac workstation Meshnet IP (`100.84.79.144`) on the `nordlynx` adapter.
+- **Docker Privilege Hardening:** User `silver-worker` was removed from the system `docker` group; standard unprivileged shell sessions cannot access `/var/run/docker.sock` or mount host filesystems.
 
 ### 4. Zero-Trust Gateway Binding
-- **Meshnet Exclusivity:** The Caddy reverse proxy (`gateway/docker-compose.yaml`) binds exclusively to the Meshnet interface (`100.116.224.88:443:443`), making the server invisible on the local LAN.
+- **Meshnet Exclusivity:** The Caddy reverse proxy (`gateway/docker-compose.yaml`) binds exclusively to the Meshnet interface (`100.116.224.88:443:443`), making the server completely invisible on the local LAN. Public Cloudflare Tunnels have been permanently decommissioned.
 
 ---
 

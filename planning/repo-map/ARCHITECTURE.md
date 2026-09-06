@@ -67,15 +67,15 @@ graph TD
 The system enforces strict traffic isolation across multiple network and adapter boundaries:
 
 1. **Zero-Trust Meshnet Ingress Layer**:
-   - Instead of listening on `0.0.0.0` (which would expose services to the local Wi-Fi / LAN), Caddy binds strictly to the host machine's NordVPN Meshnet static IP addresses (`100.116.224.88` and `100.64.153.30`).
+   - Instead of listening on `0.0.0.0` (which would expose services to the local Wi-Fi / LAN), Caddy binds strictly to the host machine's NordVPN Meshnet static IP address (`100.116.224.88`).
    - Supports both TCP and UDP for port 443 to enable HTTP/3 QUIC acceleration over the VPN mesh.
-   - **Host UFW Firewall Hardening**: The host firewall enforces `default deny incoming`. SSH (port 22) is allowed strictly over the Meshnet virtual interface (`nordlynx`), and `PasswordAuthentication no` is enforced, completely eliminating LAN brute-force risk.
+   - **Host UFW Firewall Hardening**: The host firewall enforces `default deny incoming` and `default deny routed`. SSH (22), HTTP (80), and HTTPS (443) are allowed strictly from the authorized Mac workstation Meshnet IP (`100.84.79.144`) over the `nordlynx` virtual interface, completely eliminating external, LAN, and unauthorized peer ingress.
    - **Docker Port Isolation**: The n8n UI service maps `127.0.0.1:5678:5678`, preventing Docker iptables from publishing port 5678 to the local LAN.
    - The host machine remains completely invisible to unauthenticated LAN devices.
 
 2. **`gateway_net` (Shared External Bridge)**:
    - Created independently via `docker network create gateway_net`.
-   - Shared between the central reverse proxy (`gateway/docker-compose.yaml`), Cloudflare Tunnel (`cloudflared`), and web-facing frontend services (`n8n` in `compose.yaml`, `lingua`).
+   - Shared between the central reverse proxy (`gateway/docker-compose.yaml`) and web-facing frontend services (`n8n` in `compose.yaml`, `searxng`).
    - Allows independent microservices to be started, stopped, or upgraded without recreating proxy containers.
 
 3. **`default` (Isolated Application Bridge)**:
@@ -91,20 +91,13 @@ The system enforces strict traffic isolation across multiple network and adapter
 - **Image**: `caddy:latest`
 - **Restart Policy**: `unless-stopped`
 - **Network**: `gateway_net`
-- **Port Bindings**:
-  - `100.116.224.88:80:80`, `100.116.224.88:443:443` (TCP) & `100.116.224.88:443:443/udp` (HTTP/3)
-  - `100.64.153.30:80:80`, `100.64.153.30:443:443` (TCP) & `100.64.153.30:443:443/udp` (HTTP/3)
+- **Port Bindings**: `100.116.224.88:80:80`, `100.116.224.88:443:443` (TCP) & `100.116.224.88:443:443/udp` (HTTP/3)
 - **Volumes**: `caddy_data:/data`, `caddy_config:/config`, `./Caddyfile:/etc/caddy/Caddyfile`
 - **Configuration**: Uses internal TLS certificate generation (`local_certs`) and `flush_interval -1` for real-time WebSocket communication with the n8n frontend.
-- **Path-Scoped Public Ingress**: Scopes `webhook.tiranotech.com` exclusively to `/webhook/*` and `/webhook-test/*` (`reverse_proxy n8n:5678`), immediately rejecting all other paths (e.g., UI, REST API, credentials) with HTTP 403 Forbidden.
+- **Access Scope**: Strictly serves internal `.local-n8n.com` domains (`n8n.local-n8n.com`, `lingua.local-n8n.com`). All public webhook routing (`webhook.tiranotech.com`) has been decommissioned.
 
-### B. `gateway/cloudflared` (Public Webhook Tunnel)
-- **Image**: `cloudflare/cloudflared:latest`
-- **Restart Policy**: `unless-stopped`
-- **Command**: `tunnel --no-autoupdate run`
-- **Environment**: `TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}` (injected via Doppler)
-- **Network**: `gateway_net`
-- **Role**: Maintains an outbound, encrypted persistent tunnel to Cloudflare Edge for public Slack event ingress (`webhook.tiranotech.com`) with zero inbound router port forwarding.
+### B. `gateway/cloudflared` (Decommissioned)
+- The outbound Cloudflare Tunnel container has been permanently removed from the gateway stack to ensure zero external ingress pathways. All ingress is strictly restricted to private Meshnet connections.
 
 ### C. `postgres` (Relational Database)
 - **Image**: `postgres:16`
@@ -215,10 +208,8 @@ graph TD
    - Antigravity pair programming agents interface with the production n8n instance via the `meshnet-n8n` MCP server running community `czlonkowski/n8n-mcp:latest`.
    - **Host Interface Binding**: The service runs as `local-n8n-n8n-mcp-1` on the `silver-worker` host, bound exclusively to `100.116.224.88:3001` over NordVPN Meshnet.
    - **Protocol Support**: Supports both HTTP/SSE (`http://100.116.224.88:3001/mcp`) and local stdio clients with `WEBHOOK_SECURITY_MODE=permissive`, allowing agents to inspect node schemas (`get_node`), validate expressions, manage workflows (`n8n_list_workflows`), and execute health checks (`n8n_health_check`).
-2. **Self-Hosted Isolated Code Sandbox**:
-   - For code-execution nodes and AI Assistant tools, n8n dispatches JavaScript/Python code execution to the companion service (`n8n-sandbox-service`) in `/home/silver-worker/Local-N8n/sandbox`.
-   - Listens on `http://sandbox-api:3200` attached to `gateway_net` and bound on the host to `127.0.0.1:3200` and `100.116.224.88:3200`.
-   - Guaranteed isolated from host root and database volumes via internal `sandbox_service` Docker bridge.
+2. **Code Sandbox Service (Decommissioned)**:
+   - The isolated `sysbox-runc` code execution sandbox has been decommissioned. To secure host boundaries without running nested privileged runtimes, direct unauthenticated Docker socket access was revoked for standard accounts.
 3. **Local AI Inference Engine (LM Studio on Hulk `100.64.153.30`)**:
    - High-throughput, local, private LLM and embedding inference is hosted on the dedicated compute machine **Hulk** via **LM Studio**.
    - **Endpoint Base URL**: `http://100.64.153.30:1234/v1`
@@ -241,7 +232,6 @@ graph TD
   - Operating System: Ubuntu Server (Linux `7.0.0-30-generic` x86_64)
   - Meshnet Private IP: `100.116.224.88`
   - Application Workdir: `/home/silver-worker/Local-N8n`
-  - Sandbox Workdir: `/home/silver-worker/Local-N8n/sandbox`
   - SearXNG Workdir: `/home/silver-worker/Local-N8n/searxng`
 - **AI Inference Compute Host (`hulk`)**:
   - Operating System: Windows (Meshnet node)
@@ -260,7 +250,7 @@ sequenceDiagram
     DevClient->>Meshnet: SSH Session (Ed25519 Key Auth)
     Meshnet->>HostOS: Authenticated Remote Shell (User: silver-worker)
     HostOS->>Doppler: doppler run -- (Inject memory-only credentials)
-    HostOS->>Docker: docker compose up -d (Non-interactive deploy)
+    HostOS->>Docker: docker compose up -d (Non-interactive deploy via systemd Group=docker)
     Docker->>Docker: Containers join gateway_net & default subnets
 ```
 
@@ -269,11 +259,12 @@ sequenceDiagram
    - Plaintext credentials and tokens must never be written to `.env` or disk files.
    - The directory `/home/silver-worker/Local-N8n` is bound to Doppler service tokens scoped to `silver-worker/prd`.
 2. **Host Boot Persistence Units**:
-   - `/etc/systemd/system/local-n8n.service`: Manages Postgres, Redis, n8n, and n8n-worker.
-   - `/etc/systemd/system/local-n8n-sandbox.service`: Manages sandbox-api, sandbox-runner, and registry with `After=local-n8n.service`.
-   - `/etc/systemd/system/local-n8n-searxng.service`: Manages SearXNG metasearch service with `After=local-n8n.service`.
-3. **Execution Quarantining**:
-   - AI-generated code execution is strictly routed to `http://sandbox-api:3200` and executed inside isolated runner containers. Untrusted code cannot touch host mounts or Postgres data volumes.
+   - `/etc/systemd/system/local-n8n-gateway.service`: Manages Caddy reverse proxy (`gateway_net`).
+   - `/etc/systemd/system/local-n8n.service`: Manages Postgres, Redis, n8n, and MCP server.
+   - `/etc/systemd/system/local-n8n-searxng.service`: Manages SearXNG metasearch service.
+3. **Privilege Boundary Enforcement**:
+   - Standard user `silver-worker` is not in the `docker` group; direct socket interaction (`/var/run/docker.sock`) is denied.
+   - System services execute under systemd with `Group=docker` to allow headless boot without exposing raw Docker socket access to unprivileged interactive shells.
 4. **Staging Safety Rule**:
    - Any workflow generated via agent API/MCP must retain `active: false` until validation checks succeed.
 

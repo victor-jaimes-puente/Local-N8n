@@ -38,14 +38,14 @@
 | `NODE_ENV` | Node.js runtime environment flag | `compose.yaml` (x-shared) | `production` |
 | `DATA_FOLDER` | Legacy/local host directory mounted for file exchange | `.env`, `compose.yaml` | `./caddy/n8n-docker-caddy` |
 | `SSL_EMAIL` | Contact email for automated ACME / Let's Encrypt TLS | `.env` | `example@example.com` |
-| `SANDBOX_API_KEY` | Secret token authenticating n8n to local code sandbox | `sandbox/` stack, Doppler | *(High-entropy secret token)* |
-| `SANDBOX_API_LISTEN_ADDR` | Public HTTP listen address for sandbox API container | `sandbox/` stack | `:3200` |
-| `SANDBOX_API_PORT` | Host exposed port for code sandbox service | `sandbox/` stack | `3200` |
+| `SANDBOX_API_KEY` | Secret token authenticating n8n to local code sandbox *(Decommissioned)* | `sandbox/` stack, Doppler | *(Decommissioned)* |
+| `SANDBOX_API_LISTEN_ADDR` | Public HTTP listen address for sandbox API container *(Decommissioned)* | `sandbox/` stack | `:3200` |
+| `SANDBOX_API_PORT` | Host exposed port for code sandbox service *(Decommissioned)* | `sandbox/` stack | `3200` |
 | `SEARXNG_SECRET_KEY` | High-entropy secret key securing SearXNG instance | `searxng/` stack, Doppler | *(High-entropy secret token)* |
 | `HULK_LMSTUDIO_BASE_URL` | OpenAI-compatible endpoint for LM Studio LLM inference on Hulk | n8n Workflows / Nodes | `http://100.64.153.30:1234/v1` |
 | `HULK_LMSTUDIO_API_KEY` | Placeholder API key for LM Studio OpenAI credentials in n8n | n8n Credential Vault | `lm-studio` *(any string)* |
 | `MESHNET_IP` | Static IP of silver-worker on NordVPN Meshnet adapter | `compose.yaml`, Doppler | `100.116.224.88` |
-| `CLOUDFLARE_TUNNEL_TOKEN` | Outbound tunnel token connecting cloudflared to Cloudflare edge | `gateway/docker-compose.yaml`, Doppler | *(High-entropy secret)* |
+| `CLOUDFLARE_TUNNEL_TOKEN` | Outbound tunnel token for Cloudflare Edge *(Decommissioned)* | `gateway/` stack, Doppler | *(Decommissioned)* |
 | `N8N_API_URL` | Base URL used by MCP server to connect to n8n Public API | `compose.yaml`, Doppler | `https://n8n.local-n8n.com` |
 | `N8N_API_KEY` | n8n Public API administrative key for MCP operations | `compose.yaml`, Doppler | *(JWT Bearer Token)* |
 | `N8N_MCP_ACCESS_TOKEN` | Access token for n8n instance-level MCP server (Settings -> Instance-level MCP) | `compose.yaml` (x-shared) | `${N8N_API_KEY}` |

@@ -16,8 +16,8 @@ Key Architectural Capabilities:
 - **Host Boot Persistence (`systemd`)**: A host-level unit (`/etc/systemd/system/local-n8n.service`) automatically launches the stack with Doppler runtime injection upon machine reboots, preventing un-injected credential failures.
 - **Native Agents & Execution Architecture**: Configured with `N8N_ENABLED_MODULES=agents,instance-ai` and `EXECUTIONS_MODE=regular` for the native Agents preview (dedicated top-level Agents section, chat connections, episodic memory, RAG, and sub-agents). Redis and worker configuration remain ready for re-enablement once Queue Mode supports agents.
 - **Automated Data Pruning & Log Rotation**: Protects storage volumes via built-in n8n execution pruning (`EXECUTIONS_DATA_PRUNE=true`, 168-hour retention, 50k max count) and Docker daemon JSON log rotation (`max-size: 10m`, `max-file: 3`).
-- **Multi-Tenant Gateway Network**: Central external bridge (`gateway_net`) enabling unified reverse proxying for both n8n and companion microservices (such as **Lingua**), plus outbound Cloudflare Tunnel (`cloudflared`) for Slack webhooks.
-- **Hardened Host & Network Isolation**: Host UFW firewall defaults to `deny incoming`, SSH port 22 is allowed strictly over the Meshnet interface (`nordlynx`) with password auth disabled, n8n UI binds strictly to loopback (`127.0.0.1:5678`), and public Slack webhook ingress is path-restricted with a 403 Forbidden fallback.
+- **Multi-Tenant Gateway Network**: Central external bridge (`gateway_net`) enabling unified reverse proxying for both n8n and companion microservices (such as **Lingua**). Public Cloudflare Tunnel has been decommissioned in favor of pure zero-trust private access.
+- **Hardened Host & Network Isolation**: Host UFW firewall defaults to `deny incoming` and `deny routed`. SSH (22), HTTP (80), and HTTPS (443) are allowed strictly from the authorized Mac workstation Meshnet IP (`100.84.79.144`) over `nordlynx`. Direct Docker socket access is revoked for unprivileged accounts (`silver-worker` removed from `docker` group).
 
 ---
 
@@ -35,8 +35,8 @@ Local-N8n/
 │   └── n8n-docker-caddy/
 │       └── caddy_config/
 │           └── Caddyfile                    # Alternate Caddy configuration (n8n.local.test)
-├── sandbox/                                 # Isolated n8n Code Sandbox service
-│   ├── docker-compose.yaml                  # Sandbox API & Runner compose stack
+├── sandbox/                                 # Decommissioned Code Sandbox service (historical reference)
+│   ├── docker-compose.yaml                  # Legacy sandbox API & Runner compose stack
 │   └── README.md                            # Sandbox architecture & systemd service guide
 ├── searxng/                                 # Self-hosted SearXNG Search Engine
 │   ├── docker-compose.yaml                  # SearXNG Compose definition on gateway_net
@@ -100,21 +100,20 @@ Local-N8n/
 ## 3. Remote Host & Agent Connection Model
 
 ### Host Specifications
-- **Automation Server (`silver-worker`)**: Dell Precision 5480, Ubuntu Server (`7.0.0-30-generic` x86_64) — Meshnet IP `100.116.224.88` (Hosts n8n, Caddy, Postgres, Redis, Sandbox, SearXNG).
+- **Automation Server (`silver-worker`)**: Dell Precision 5480, Ubuntu Server (`7.0.0-30-generic` x86_64) — Meshnet IP `100.116.224.88` (Hosts n8n, Caddy, Postgres, Redis, SearXNG).
 - **AI Inference Server (`hulk`)**: High-Performance Compute Host (Windows) — Meshnet IP `100.64.153.30` (Hosts LM Studio OpenAI-compatible local LLM server on port `1234`).
 - **Application Root**: `/home/silver-worker/Local-N8n`
-- **Sandbox Root**: `/home/silver-worker/Local-N8n/sandbox`
 - **SearXNG Root**: `/home/silver-worker/Local-N8n/searxng`
 
 ### Connection Method
-- **SSH Transport**: Authenticated via Ed25519 public key cryptography (`ssh -i ~/.ssh/id_ed25519 silver-worker@100.116.224.88` or shell alias `silverworker`). Password authentication is disabled on the host (`/etc/ssh/sshd_config.d/99-hardened.conf`), and UFW restricts incoming port 22 strictly to the `nordlynx` interface.
+- **SSH Transport**: Authenticated via Ed25519 public key cryptography (`ssh -i ~/.ssh/id_ed25519 silver-worker@100.116.224.88` or shell alias `silverworker`). UFW restricts incoming port 22 strictly to the authorized Mac workstation Meshnet IP (`100.84.79.144`) on the `nordlynx` interface.
 - **Zero-Trust Network**: Remote shell access and cross-node LLM inference traffic are routed exclusively over the private NordVPN Meshnet tunnel, inaccessible from public IP ranges or unauthenticated local Wi-Fi.
 
 ### Agent Safeguards & Guardrails
 1. **Zero-Disk Secret Policy**: Agents must never commit, output, or write plaintext tokens to `.env` files. Secrets must strictly be managed through Doppler (`silver-worker/prd`).
-2. **Execution Quarantining**: Untrusted AI-generated code from the Assistant or Agents is restricted to the `sandbox-api` / `sandbox-runner` containers on `gateway_net` and never executed on the host OS or production database containers.
+2. **Privilege Boundary**: Direct Docker socket access is revoked for unprivileged accounts (`silver-worker`). Commands requiring administrative Docker actions require `sudo`.
 3. **Safe Workflow Staging**: All newly created workflows must be scaffolded with `active: false` until validation succeeds.
-4. **Non-Interactive Deployments**: Container operations must run with `doppler run -- docker compose up -d` non-interactively. Commands requiring interactive `sudo` passwords must be clearly documented for manual execution.
+4. **Non-Interactive Deployments**: Container operations must run with `doppler run -- docker compose up -d` non-interactively via systemd or privileged execution.
 
 ---
 
@@ -124,11 +123,11 @@ Local-N8n/
 | :--- | :--- |
 | **Main n8n Stack** | [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml), Doppler project `silver-worker/prd` |
 | **Local AI Inference (Hulk)** | `http://100.64.153.30:1234/v1`, [`workflows/ai-testing/`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/), [`ARCHITECTURE.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ARCHITECTURE.md) |
-| **Host Boot Persistence** | `/etc/systemd/system/local-n8n.service`, `/etc/systemd/system/local-n8n-sandbox.service`, `/etc/systemd/system/local-n8n-searxng.service` |
+| **Host Boot Persistence** | `/etc/systemd/system/local-n8n-gateway.service`, `/etc/systemd/system/local-n8n.service`, `/etc/systemd/system/local-n8n-searxng.service` |
 | **Database Initialization** | [`init-data.sh`](file:///Users/victor/Dev/Local-N8n/init-data.sh), [`compose.yaml`](file:///Users/victor/Dev/Local-N8n/compose.yaml) |
 | **Reverse Proxy & Ingress** | [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml), [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile) |
 | **Environment & Secrets** | [`.env-sample`](file:///Users/victor/Dev/Local-N8n/.env-sample), [`ENVIRONMENT_AND_SECRETS.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/ENVIRONMENT_AND_SECRETS.md) |
-| **Code Sandbox Stack** | [`sandbox/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/sandbox/docker-compose.yaml), [`sandbox/README.md`](file:///Users/victor/Dev/Local-N8n/sandbox/README.md) |
+| **Code Sandbox (Decommissioned)** | [`sandbox/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/sandbox/docker-compose.yaml), [`sandbox/README.md`](file:///Users/victor/Dev/Local-N8n/sandbox/README.md) |
 | **SearXNG Search Engine** | [`searxng/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/searxng/docker-compose.yaml), [`searxng/settings.yml`](file:///Users/victor/Dev/Local-N8n/searxng/settings.yml), [`searxng/README.md`](file:///Users/victor/Dev/Local-N8n/searxng/README.md) |
 | **Operations & Runbooks** | [`README.md`](file:///Users/victor/Dev/Local-N8n/README.md), [`OPERATIONS_AND_DEPLOYMENT.md`](file:///Users/victor/Dev/Local-N8n/planning/repo-map/OPERATIONS_AND_DEPLOYMENT.md) |
 | **Exported Workflows** | [`workflows/README.md`](file:///Users/victor/Dev/Local-N8n/workflows/README.md), [`workflows/meshnet-health-check/`](file:///Users/victor/Dev/Local-N8n/workflows/meshnet-health-check/), [`workflows/ai-testing/`](file:///Users/victor/Dev/Local-N8n/workflows/ai-testing/) |

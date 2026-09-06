@@ -12,8 +12,8 @@
 | [`init-data.sh`](file:///Users/victor/Dev/Local-N8n/init-data.sh) | Shell | 15 | PostgreSQL entrypoint initialization script creating non-root application user and granting database schema rights. |
 | [`.env`](file:///Users/victor/Dev/Local-N8n/.env) | Env | 29 | Local offline development environment fallback file. |
 | [`.env-sample`](file:///Users/victor/Dev/Local-N8n/.env-sample) | Env | 29 | Doppler secrets schema reference and sanitized template for production variables. |
-| [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml) | YAML | 32 | Gateway Compose stack running Caddy (Meshnet IP bound) and `cloudflared` tunnel for public Slack ingress on `gateway_net`. |
-| [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile) | Caddy | 32 | Hardened ingress routing rules with path-restricted Slack webhooks (403 fallback) and Meshnet internal routing (`n8n.local-n8n.com`, `lingua...`). |
+| [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml) | YAML | 25 | Gateway Compose stack running standalone Caddy reverse proxy (Meshnet IP bound) on `gateway_net`. |
+| [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile) | Caddy | 16 | Hardened internal ingress routing rules strictly serving Meshnet private domains (`n8n.local-n8n.com`, `lingua...`). |
 | [`caddy/n8n-docker-caddy/caddy_config/Caddyfile`](file:///Users/victor/Dev/Local-N8n/caddy/n8n-docker-caddy/caddy_config/Caddyfile) | Caddy | 15 | Legacy standalone Caddy configuration mapping `n8n.local.test` to `n8n:5678`. |
 | [`README.md`](file:///Users/victor/Dev/Local-N8n/README.md) | Markdown | 139 | Production deployment manual covering NordVPN Meshnet, Doppler injection, systemd boot persistence, LM Studio inference, and troubleshooting. |
 | [`DOCKER-WSL.md`](file:///Users/victor/Dev/Local-N8n/DOCKER-WSL.md) | Markdown | 95 | Detailed integration manual for Docker Desktop and WSL 2 on Windows 11. |
@@ -91,16 +91,14 @@
 - **Networks (L125–L127)**: Declares `gateway_net` as `external: true`.
 
 ### B. [`gateway/docker-compose.yaml`](file:///Users/victor/Dev/Local-N8n/gateway/docker-compose.yaml)
-- Implements the standalone reverse proxy using `caddy:latest` and the outbound Cloudflare Tunnel using `cloudflare/cloudflared:latest`.
-- **Zero-Trust Port Bindings (L5–L8)**:
+- Implements the standalone reverse proxy using `caddy:latest`.
+- **Zero-Trust Port Bindings**:
   - `100.116.224.88:80:80`, `100.116.224.88:443:443` (TCP) & `100.116.224.88:443:443/udp` (HTTP/3).
-- **Public Tunnel**: `cloudflared` runs `tunnel --no-autoupdate run` using `CLOUDFLARE_TUNNEL_TOKEN` on `gateway_net` with zero open router ports.
 - **Volumes**: Mounts persistent state `caddy_data:/data`, `caddy_config:/config`, and `./Caddyfile:/etc/caddy/Caddyfile`.
 - **Network**: Connects to external bridge `gateway_net`.
 
 ### C. [`gateway/Caddyfile`](file:///Users/victor/Dev/Local-N8n/gateway/Caddyfile)
 - Global Block: `local_certs` enables Caddy's internal automated TLS certificate authority.
-- `webhook.tiranotech.com`: Hardened public webhook proxy routing `/webhook/*` and `/webhook-test/*` to `n8n:5678`, dropping all other routes with HTTP 403 Forbidden.
 - `n8n.local-n8n.com`: Proxies traffic to `n8n:5678` over Meshnet with `flush_interval -1` (critical for real-time WebSocket communication in n8n's visual workflow canvas).
 - `lingua.local-n8n.com`: Proxies traffic to companion service `lingua:3000`.
 
@@ -163,9 +161,10 @@
 ### M.1 [`agents/`](file:///Users/victor/Dev/Local-N8n/agents/) (Native n8n Agents)
 - **`tirano/`**: Production native Agent (`Tirano` / `OeEDzKbhvVK7aqeT`) running `google/gemma-4-e4b` on Hulk, persistent episodic memory in n8n, Slack channel integration, and `Tool-SearXNG-Search` web browsing tool.
 
-### N. [`sandbox/`](file:///Users/victor/Dev/Local-N8n/sandbox/) (Code Sandbox Service)
-- **`docker-compose.yaml`**: Official companion stack running `sandbox-api` (port 3200), `sandbox-runner`, and `registry` (port 5050), integrated with `gateway_net` and Doppler secrets (`SANDBOX_API_KEY`).
-- **`README.md`**: Sandbox service architecture, endpoint health verification, and `/etc/systemd/system/local-n8n-sandbox.service` unit setup.
+### N. [`sandbox/`](file:///Users/victor/Dev/Local-N8n/sandbox/) (Decommissioned Code Sandbox)
+- **Status**: Decommissioned from the production stack on `silver-worker` (containers and `sysbox.service` disabled). Retained in repo for architecture reference.
+- **`docker-compose.yaml`**: Legacy companion stack running `sandbox-api`, `sandbox-runner`, and `registry`.
+- **`README.md`**: Sandbox service architecture and historical setup.
 
 ### G. Community n8n-mcp Server (`compose.yaml`)
 - **Container**: `local-n8n-n8n-mcp-1` (`ghcr.io/czlonkowski/n8n-mcp:latest`).

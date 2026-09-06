@@ -25,8 +25,7 @@ echo "Enabling services for host boot persistence..."
 systemctl enable \
   local-n8n-gateway.service \
   local-n8n.service \
-  local-n8n-searxng.service \
-  local-n8n-sandbox.service
+  local-n8n-searxng.service
 
 echo "=== Systemd services installed and enabled successfully ==="
 echo "You can check status with: ${SCRIPT_DIR}/status-all.sh"

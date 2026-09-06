@@ -11,7 +11,7 @@
           "interval": [
             {
               "field": "minutes",
-              "minutesInterval": 1
+              "minutesInterval": 30
             }
           ]
         }
@@ -115,7 +115,7 @@
             {
               "condition": "lte",
               "keyName": "notify_time",
-              "keyValue": "={{ $now.toISO() }}"
+              "keyValue": "={{ $now.minus({ minutes: 5 }).toISO() }}"
             }
           ]
         },
@@ -177,7 +177,7 @@
         "operation": "post",
         "resource": "message",
         "select": "channel",
-        "text": "=⏰ *Reminder:* {{ $json.task }} (_{{ $json.offset_label }}_)"
+        "text": "=⏰ *Reminder:* {{ $json.task }} (_{{ $json.offset_label }}_)\n> ⚠️ _[Delayed Delivery - Safety Net]_"
       },
       "position": [700, 350],
       "type": "n8n-nodes-base.slack",

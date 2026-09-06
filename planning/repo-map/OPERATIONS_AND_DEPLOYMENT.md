@@ -142,26 +142,38 @@ sudo systemctl restart nordvpnd
 nordvpn c
 ```
 
-### Host UFW Firewall Safeguards (Hardened Meshnet Ingress)
-Ubuntu's native UFW must be used as the primary host firewall, scoped strictly to the Meshnet adapter (`nordlynx`):
+### Host UFW Firewall Safeguards (Hardened Zero-Trust Meshnet Ingress)
+Ubuntu's native UFW acts as the primary firewall, strictly locked to the authorized Mac workstation Meshnet IP (`100.84.79.144`) on the `nordlynx` adapter:
 ```bash
-# 1. Ensure default deny on incoming traffic, allow outgoing
+# 1. Ensure default deny on incoming and routed traffic, allow outgoing
 sudo ufw default deny incoming
+sudo ufw default deny routed
 sudo ufw default allow outgoing
 
-# 2. Allow SSH strictly on the Meshnet interface (nordlynx)
-sudo ufw allow in on nordlynx to any port 22 proto tcp
+# 2. Allow SSH, HTTP, and HTTPS strictly from the authorized Mac workstation IP:
+sudo ufw allow in on nordlynx from 100.84.79.144 to any port 22 proto tcp
+sudo ufw allow in on nordlynx from 100.84.79.144 to any port 80 proto tcp
+sudo ufw allow in on nordlynx from 100.84.79.144 to any port 443 proto tcp
 
-# 3. If port 22 was previously open to 0.0.0.0, remove the open rule
-sudo ufw delete allow 22/tcp || true
+# 3. Remove any wide-open "Anywhere" ingress rules
+sudo ufw delete allow in on nordlynx to any port 22 proto tcp || true
+sudo ufw delete allow in on nordlynx to any port 80 proto tcp || true
+sudo ufw delete allow in on nordlynx to any port 443 proto tcp || true
 
 # 4. Enable firewall & reload
 sudo ufw enable
 sudo ufw reload
 
-# 5. Check firewall status
+# 5. Check firewall status (must show From: 100.84.79.144 only)
 sudo ufw status verbose
 ```
+
+### Docker Privilege Boundary Hardening ("Socket Revocation")
+To prevent unprivileged container-escape attacks to host root:
+1. **Docker Group Revoked**: User `silver-worker` was removed from the `docker` system group (`sudo gpasswd -d silver-worker docker`). Direct unauthenticated execution of `docker` commands without `sudo` yields `permission denied on /var/run/docker.sock`.
+2. **Administrative Access**: Running Docker CLI commands requires `sudo` with the user password.
+3. **Headless Boot Persistence**: Host systemd unit files in `/etc/systemd/system/local-n8n*.service` specify `Group=docker`, allowing systemd (PID 1) to launch containers under Doppler on boot without user intervention.
+4. **Service Management**: `/etc/sudoers.d/silver-worker-systemctl` grants `NOPASSWD: /usr/bin/systemctl` for safe stack management without exposing raw Docker socket access.
 
 ---
 
@@ -228,15 +240,8 @@ Workflows exported from n8n are versioned in `workflows/<workflow-slug>/`:
 # workflows/<workflow-slug>/README.md     (Topology, triggers, credential IDs, test instructions)
 ```
 
-### Code Sandbox Service Deployment
-To run the isolated Docker-in-Docker code sandbox alongside the stack:
-```bash
-# 1. Inject SANDBOX_API_KEY into Doppler
-doppler secrets set SANDBOX_API_KEY="$(openssl rand -hex 24)" --project silver-worker --config prd
-
-# 2. Start Sandbox Stack
-cd sandbox && doppler run -- docker compose up -d
-```
+### Code Sandbox Service (Decommissioned)
+The isolated Docker-in-Docker code sandbox (`sandbox/` and `sysbox.service`) has been decommissioned from the active production stack to reduce host attack surface and eliminate privileged nested container runtime dependencies. Its systemd unit (`local-n8n-sandbox.service`) has been permanently disabled and purged.
 
 ### SearXNG Search Engine Service Deployment
 To run the self-hosted SearXNG metasearch engine for n8n AI Assistant:

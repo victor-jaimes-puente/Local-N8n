@@ -11,7 +11,7 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-echo "1. Starting Gateway (Caddy & Cloudflare Tunnel)..."
+echo "1. Starting Gateway (Caddy Reverse Proxy)..."
 systemctl start local-n8n-gateway.service
 
 echo "2. Starting Core Stack (Postgres, Redis, n8n, Worker)..."
@@ -19,8 +19,5 @@ systemctl start local-n8n.service
 
 echo "3. Starting SearXNG Metasearch Service..."
 systemctl start local-n8n-searxng.service
-
-echo "4. Starting Code Execution Sandbox..."
-systemctl start local-n8n-sandbox.service
 
 echo "=== All services started successfully ==="

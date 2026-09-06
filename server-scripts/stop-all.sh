@@ -11,16 +11,13 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-echo "1. Stopping Sandbox..."
-systemctl stop local-n8n-sandbox.service || true
-
-echo "2. Stopping SearXNG..."
+echo "1. Stopping SearXNG..."
 systemctl stop local-n8n-searxng.service || true
 
-echo "3. Stopping Core Stack..."
+echo "2. Stopping Core Stack..."
 systemctl stop local-n8n.service || true
 
-echo "4. Stopping Gateway..."
+echo "3. Stopping Gateway..."
 systemctl stop local-n8n-gateway.service || true
 
 echo "=== All services stopped ==="
